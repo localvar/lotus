@@ -2,6 +2,7 @@ package models
 
 import (
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/jmoiron/sqlx"
 	"github.com/localvar/go-utils/config"
 )
@@ -14,8 +15,9 @@ type Setting struct {
 }
 
 func Init(debug bool) error {
-	cs := config.String("/app/database")
-	xdb, e := sqlx.Connect("mysql", cs)
+	driver := config.String("/database/driver")
+	dsn := config.String("/database/dsn")
+	xdb, e := sqlx.Connect(driver, dsn)
 	if e != nil {
 		return e
 	}

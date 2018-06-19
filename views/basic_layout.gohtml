@@ -3,19 +3,20 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>莲花问答</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>{[block "title" .]}{[end]}</title>
     {[block "style" .]}{[end]}
+    <link href="//cdn.bootcss.com/element-ui/2.4.0/theme-chalk/index.css" rel="stylesheet">
 </head>
 
 <body>
-    <div class="container">
-		<div id="login_container"></div>
+    <div id="app">
         {[block "body" .]}{[end]}
     </div>
     <script src="//cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
     <script src="//cdn.bootcss.com/axios/0.18.0/axios.min.js"></script>
+    <script src="//cdn.bootcss.com/element-ui/2.4.0/index.js"></script>
     {[block "script" .]}{[end]}
 </body>
 

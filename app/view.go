@@ -15,14 +15,14 @@ type viewRoute struct {
 	attr    uint
 }
 
-func addViewRoute(path string, handler http.HandlerFunc, attr uint) {
+func viewAddRoute(path string, handler http.HandlerFunc, attr uint) {
 	if _, ok := viewRoutes[path]; ok {
 		panic(fmt.Errorf("route '%v' already registered", path))
 	}
 	viewRoutes[path] = &viewRoute{handler: handler, attr: attr}
 }
 
-func findViewRoute(path string) *viewRoute {
+func viewFindRoute(path string) *viewRoute {
 	if r, ok := viewRoutes[path]; ok {
 		return r
 	}
@@ -48,6 +48,11 @@ func viewInit(debug bool) error {
 		RightDelim: "]}",
 		Ext:        ".gohtml",
 	})
+
+	if e := questionInit(); e != nil {
+		return e
+	}
+
 	return nil
 }
 
@@ -78,8 +83,7 @@ func viewRenderError(w http.ResponseWriter, r *http.Request, data interface{}) {
 }
 
 func viewServeHTTP(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path[1:]
-	vr := findViewRoute(path)
+	vr := viewFindRoute(r.URL.Path)
 	if vr == nil {
 		w.WriteHeader(http.StatusNotFound)
 		return

@@ -1,0 +1,40 @@
+{[/* layout: basic */]}
+
+{[define "body"]}
+<el-input v-model="question.content" type="textarea" :rows="10" placeholder="请输入您的问题"></el-input>
+<el-switch :value="urgent" @change="toggleUrgent" active-color="#ff4949" inactive-text="加急" inactive-color="#777777"></el-switch>
+<el-button @click.prevent="submit" type="primary">主要按钮</el-button>
+{[end]}
+
+
+{[define "script"]}
+<script>
+var vm = new Vue({
+	el: 'div#app',
+
+	data: {
+		question: {
+			id: '0',
+			content: '',
+			status: 0,
+		},
+	},
+
+	methods: {
+		submit() {
+			alert('aaabbb')
+		},
+
+		toggleUrgent(v) {
+			this.question.status = v ? 1 : 0
+		}
+	},
+
+	computed: {
+		urgent() {
+			return this.question.status == 1
+		},
+	}
+})
+</script>
+{[end]}

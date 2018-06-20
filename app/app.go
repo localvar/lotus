@@ -90,7 +90,9 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.HasPrefix(path, "/MP_verify_") || strings.HasPrefix(path, "/static/") {
+	if strings.HasPrefix(path, "/static/") || // image/js/css
+		strings.HasPrefix(path, "/MP_verify_") || // wechat
+		path == "/robots.txt" {
 		http.ServeFile(w, r, r.URL.Path[1:])
 		return
 	}

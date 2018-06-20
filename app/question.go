@@ -1,9 +1,7 @@
 package app
 
-import "net/http"
-
-func questionRenderEdit(w http.ResponseWriter, r *http.Request) {
-	viewRenderSimple(w, r)
+func questionRenderEdit(ctx *viewContext) error {
+	return nil
 }
 
 func questionInit() error {

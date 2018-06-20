@@ -8,14 +8,26 @@ import (
 )
 
 //------------------------------------------------------------------------------
+// view Context
+
+type viewContext struct {
+	w    http.ResponseWriter
+	r    *http.Request
+	tmpl string // path of html template
+	data map[string]interface{}
+}
+
+//------------------------------------------------------------------------------
 // view routes
 
+type viewHandlerFunc func(vc *viewContext) error
+
 type viewRoute struct {
-	handler http.HandlerFunc
+	handler viewHandlerFunc
 	attr    uint
 }
 
-func viewAddRoute(path string, handler http.HandlerFunc, attr uint) {
+func viewAddRoute(path string, handler viewHandlerFunc, attr uint) {
 	if _, ok := viewRoutes[path]; ok {
 		panic(fmt.Errorf("route '%v' already registered", path))
 	}
@@ -32,7 +44,9 @@ func viewFindRoute(path string) *viewRoute {
 //------------------------------------------------------------------------------
 
 const (
-	viewRequireOAuth = 0x00000001
+	viewRequireOAuth = 1 << iota
+	viewUseWechatJSSDK
+	viewCustomRender
 )
 
 var (
@@ -56,30 +70,18 @@ func viewInit(debug bool) error {
 	return nil
 }
 
-func viewRenderSimple(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path[1:]
-	path = path[:len(path)-4] + "gohtml" // html ==> gohtml
-	render.Render(w, path, nil)
-}
-
-func viewRenderWechatSimple(w http.ResponseWriter, r *http.Request) {
-	data := wechatNewDataWithConfig(r)
-	path := r.URL.Path[1:]
-	path = path[:len(path)-4] + "gohtml" // html ==> gohtml
-	render.Render(w, path, data)
-}
-
-func viewRenderError(w http.ResponseWriter, r *http.Request, data interface{}) {
+func viewRenderError(ctx *viewContext, err interface{}) {
 	message := "未知错误"
-	if data != nil {
-		switch d := data.(type) {
+	if err != nil {
+		switch d := err.(type) {
 		case string:
 			message = d
 		case error:
 			message = d.Error()
 		}
 	}
-	render.Render(w, "error.gohtml", message)
+	ctx.data["errmsg"] = message
+	render.Render(ctx.w, "error.gohtml", ctx.data)
 }
 
 func viewServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -89,14 +91,34 @@ func viewServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := viewContext{
+		w: w,
+		r: r,
+		data: map[string]interface{}{
+			"debug": render.Debug,
+		},
+	}
 	if vr.attr&viewRequireOAuth != 0 {
 		if ok, e := wechatOAuth(w, r); !ok {
 			if e != nil {
-				viewRenderError(w, r, e)
+				viewRenderError(&ctx, e)
 			}
 			return
 		}
 	}
 
-	vr.handler(w, r)
+	if e := vr.handler(&ctx); e != nil {
+		viewRenderError(&ctx, e)
+	}
+
+	if vr.attr&viewUseWechatJSSDK != 0 {
+		ctx.data["wxcfg"] = wechatNewJSSDKConfig(r)
+	}
+
+	path := ctx.tmpl
+	if len(path) == 0 {
+		path := ctx.r.URL.Path[1:]
+		path = path[:len(path)-len(".html")] + render.Ext // html ==> {Ext}
+	}
+	render.Render(w, path, ctx.data)
 }

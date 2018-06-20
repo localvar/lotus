@@ -14,8 +14,8 @@
     <div id="app">
         {[block "body" .]}{[end]}
     </div>
-    <script src="//cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
-    <script src="//cdn.bootcss.com/axios/0.18.0/axios.min.js"></script>
+    <script src="//cdn.bootcss.com/vue/2.5.16/vue{[if not .debug]}.min{[end]}.js"></script>
+    <script src="//cdn.bootcss.com/axios/0.18.0/axios{[if not .debug]}.min{[end]}.js"></script>
     <script src="//cdn.bootcss.com/element-ui/2.4.0/index.js"></script>
     {[block "script" .]}{[end]}
 </body>

@@ -15,10 +15,9 @@ const (
 	urlOAuth2 = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=APPID&redirect_uri=REDIRECT_URI&response_type=code&scope=snsapi_base#wechat_redirect"
 )
 
-func wechatNewDataWithConfig(r *http.Request) map[string]interface{} {
+func wechatNewJSSDKConfig(r *http.Request) *wechat.JSSDKConfig {
 	url := fullRequestURL(r)
-	cfg := wxclnt.NewJSSDKConfig(true, render.Debug, url)
-	return map[string]interface{}{"wxcfg": cfg}
+	return wxclnt.NewJSSDKConfig(true, render.Debug, url)
 }
 
 func wechatOAuth(w http.ResponseWriter, r *http.Request) (bool, error) {

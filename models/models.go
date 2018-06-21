@@ -1,7 +1,13 @@
 package models
 
 import (
+	"bufio"
 	"database/sql"
+	"fmt"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -11,20 +17,17 @@ import (
 
 var db *sqlx.DB
 
-type Setting struct {
-	Name  string `db:"name"`
-	Value string `db:"value"`
-}
-
 func Init(debug bool) error {
 	driver := config.String("/database/driver")
 	dsn := config.String("/database/dsn")
+
 	xdb, e := sqlx.Connect(driver, dsn)
 	if e != nil {
 		return e
 	}
+
 	db = xdb
-	return nil
+	return upgrade()
 }
 
 func Uninit() error {
@@ -55,4 +58,128 @@ func isExist(tx *sqlx.Tx, qs string, arg interface{}) (bool, error) {
 	}
 
 	return true, nil
+}
+
+type schemaScript struct {
+	ver   int
+	stmts []string
+}
+
+func loadSchemaScript() ([]schemaScript, error) {
+	const syntaxErrFmt = "expect ';' at line: %v"
+
+	f, e := os.Open("models/schema.sql")
+	if e != nil {
+		return nil, e
+	}
+	defer f.Close()
+
+	var (
+		ln      int
+		res     []schemaScript
+		cur     schemaScript
+		reVer   = regexp.MustCompile(`^-- +(?i:version) +(\d+)$`)
+		sb      = strings.Builder{}
+		scanner = bufio.NewScanner(f)
+	)
+
+	for scanner.Scan() {
+		ln++
+		line := strings.TrimSpace(scanner.Text())
+		if len(line) == 0 {
+			continue
+		}
+
+		if !strings.HasPrefix(line, "--") {
+			if sb.Len() > 0 {
+				sb.WriteByte(' ')
+			}
+			sb.WriteString(line)
+
+			if line[len(line)-1] == ';' {
+				cur.stmts = append(cur.stmts, sb.String())
+				sb.Reset()
+			}
+			continue
+		}
+
+		if m := reVer.FindStringSubmatch(line); len(m) == 3 {
+			if sb.Len() > 0 {
+				return nil, fmt.Errorf(syntaxErrFmt, ln)
+			}
+			if len(cur.stmts) > 0 {
+				res = append(res, cur)
+			}
+			ver, _ := strconv.Atoi(m[3])
+			if l := len(res); l > 0 && res[l-1].ver >= ver {
+				return nil, fmt.Errorf("version %v appears after a higher version", ver)
+			}
+			cur.ver = ver
+			cur.stmts = nil
+		}
+	}
+
+	if e := scanner.Err(); e != nil {
+		return nil, e
+	}
+
+	if sb.Len() > 0 {
+		return nil, fmt.Errorf(syntaxErrFmt, ln)
+	}
+
+	if len(cur.stmts) > 0 {
+		res = append(res, cur)
+	}
+
+	return res, nil
+}
+
+func upgrade() error {
+	const schemaVersion = "schema_version"
+
+	sss, e := loadSchemaScript()
+	if e != nil {
+		return e
+	}
+	if len(sss) == 0 {
+		return nil
+	}
+
+	ver, e := GetOptionInt(nil, schemaVersion)
+	if e != nil { // regards all errors as schema not created
+		ver = -1 // set ver to -1 to execute all statements
+	}
+
+	toVer := sss[len(sss)-1].ver
+	if ver >= toVer {
+		return nil
+	}
+
+	tx, e := db.Beginx()
+	if e != nil {
+		return e
+	}
+
+	driver := db.DriverName()
+	for _, ss := range sss {
+		if ss.ver <= ver {
+			continue
+		}
+		for _, s := range ss.stmts {
+			if driver == "mysql" {
+				s = strings.Replace(s, "WITHOUT ROWID", "", 1)
+				s = strings.Replace(s, "INTEGER PRIMARY", "BIGINT(20) PRIMARY", 1)
+			}
+			if _, e = tx.Exec(s); e != nil {
+				tx.Rollback()
+				return e
+			}
+		}
+	}
+
+	if e = SetOption(tx, schemaVersion, toVer); e != nil {
+		return e
+	}
+
+	return tx.Commit()
 }

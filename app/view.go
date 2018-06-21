@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/localvar/go-utils/layout"
+	"github.com/localvar/lotus/models"
 )
 
 //------------------------------------------------------------------------------
@@ -13,6 +14,7 @@ import (
 type viewContext struct {
 	w    http.ResponseWriter
 	r    *http.Request
+	user *models.User
 	tmpl string // path of html template
 	data map[string]interface{}
 }
@@ -84,6 +86,29 @@ func viewRenderError(ctx *viewContext, err interface{}) {
 	render.Render(ctx.w, "error.gohtml", ctx.data)
 }
 
+func viewRenderNoop(ctx *viewContext) error {
+	return nil
+}
+
+func viewGetUserID(ctx *viewContext) (int64, error) {
+	if ctx.user != nil {
+		return ctx.user.ID, nil
+	}
+	return userIDFromCookie(ctx.r)
+}
+
+func viewGetUser(ctx *viewContext) (*models.User, error) {
+	if ctx.user != nil {
+		return ctx.user, nil
+	}
+	u, e := userFromCookie(ctx.r)
+	if e != nil {
+		return nil, e
+	}
+	ctx.user = u
+	return u, nil
+}
+
 func viewServeHTTP(w http.ResponseWriter, r *http.Request) {
 	vr := viewFindRoute(r.URL.Path)
 	if vr == nil {
@@ -99,7 +124,7 @@ func viewServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	if vr.attr&viewRequireOAuth != 0 {
-		if ok, e := wechatOAuth(w, r); !ok {
+		if ok, e := wechatOAuth(&ctx); !ok {
 			if e != nil {
 				viewRenderError(&ctx, e)
 			}
@@ -109,6 +134,7 @@ func viewServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if e := vr.handler(&ctx); e != nil {
 		viewRenderError(&ctx, e)
+		return
 	}
 
 	if vr.attr&viewUseWechatJSSDK != 0 {

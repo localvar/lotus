@@ -3,16 +3,19 @@ package app
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/localvar/go-utils/config"
 	"github.com/localvar/go-utils/wechat"
+	"github.com/localvar/lotus/models"
 )
 
 var wxclnt *wechat.Client
 
 const (
-	urlOAuth2 = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=APPID&redirect_uri=REDIRECT_URI&response_type=code&scope=snsapi_base#wechat_redirect"
+	urlOAuth2 = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=APPID&redirect_uri=REDIRECT_URI&response_type=code&scope=snsapi_userinfo#wechat_redirect"
 )
 
 func wechatNewJSSDKConfig(r *http.Request) *wechat.JSSDKConfig {
@@ -20,32 +23,52 @@ func wechatNewJSSDKConfig(r *http.Request) *wechat.JSSDKConfig {
 	return wxclnt.NewJSSDKConfig(true, render.Debug, url)
 }
 
-func wechatOAuth(w http.ResponseWriter, r *http.Request) (bool, error) {
-	if userIDFromCookie(r) != "" {
+func wechatOAuth(ctx *viewContext) (bool, error) {
+	if _, e := userIDFromCookie(ctx.r); e == nil {
 		return true, nil
 	}
 
-	code := r.URL.Query().Get("code")
+	code := ctx.r.URL.Query().Get("code")
 	if len(code) == 0 {
-		from := url.QueryEscape(fullRequestURL(r))
+		from := url.QueryEscape(fullRequestURL(ctx.r))
 		url := strings.Replace(urlOAuth2, "APPID", wxclnt.AppID, 1)
 		url = strings.Replace(url, "REDIRECT_URI", from, 1)
-		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+		http.Redirect(ctx.w, ctx.r, url, http.StatusTemporaryRedirect)
 		return false, nil
 	}
 
-	token, e := wxclnt.GetOAuth2AccessToken(code)
+	ui, e := wxclnt.GetUserInfoViaOAuth2(code)
 	if e != nil {
 		return false, e
+	}
+
+	u, e := models.GetUserByWxOpenID(ui.OpenID)
+	if e != nil {
+		return false, e
+	}
+
+	if u == nil {
+		u = &models.User{
+			WxOpenID:  ui.OpenID,
+			WxUnionID: ui.UnionID,
+			Role:      models.GeneralUser,
+			NickName:  ui.Nickname,
+			Avatar:    ui.HeadImageURL,
+			SignUpAt:  time.Now(),
+		}
+		if u, e = models.InsertUser(u); e != nil {
+			return false, e
+		}
 	}
 
 	c := &http.Cookie{
 		Path:     "/",
 		HttpOnly: true,
 		Name:     cookieUserID,
-		Value:    token.OpenID,
+		Value:    strconv.FormatInt(u.ID, 10),
 	}
-	http.SetCookie(w, c)
+	http.SetCookie(ctx.w, c)
+	ctx.user = u
 	return true, nil
 }
 

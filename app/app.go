@@ -2,12 +2,14 @@ package app
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/localvar/go-utils/config"
 	"github.com/localvar/go-utils/log"
 	"github.com/localvar/go-utils/rpc"
+	"github.com/localvar/lotus/models"
 )
 
 const (
@@ -59,11 +61,26 @@ func fullRequestURL(r *http.Request) string {
 	return server
 }
 
-func userIDFromCookie(r *http.Request) string {
-	if c, e := r.Cookie(cookieUserID); e == nil {
-		return c.Value
+func userIDFromCookie(r *http.Request) (int64, error) {
+	c, e := r.Cookie(cookieUserID)
+	if e != nil {
+		return 0, e
 	}
-	return ""
+
+	id, e := strconv.ParseInt(c.Value, 10, 64)
+	if e != nil {
+		return 0, e
+	}
+
+	return id, nil
+}
+
+func userFromCookie(r *http.Request) (*models.User, error) {
+	id, e := userIDFromCookie(r)
+	if e != nil {
+		return nil, e
+	}
+	return models.GetUserByID(id)
 }
 
 func serveHTTP(w http.ResponseWriter, r *http.Request) {

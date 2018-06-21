@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -58,6 +59,49 @@ func isExist(tx *sqlx.Tx, qs string, arg interface{}) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func getFieldList(o interface{}, includeID bool) []string {
+	t := reflect.TypeOf(o)
+	num := t.NumField()
+	res := make([]string, 0, num)
+	for i := 0; i < num; i++ {
+		name := t.Field(i).Tag.Get("db")
+		if includeID || strings.ToLower(name) != "id" {
+			res = append(res, name)
+		}
+	}
+	return res
+}
+
+func buildInsert(table string, fields ...string) string {
+	var sb strings.Builder
+	sb.WriteString("INSERT INTO `")
+	sb.WriteString(table)
+	sb.WriteString("`(")
+	for i, f := range fields {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+		sb.WriteByte('`')
+		sb.WriteString(f)
+		sb.WriteByte('`')
+	}
+	sb.WriteString(") VALUES (")
+	for i, f := range fields {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+		sb.WriteByte(':')
+		sb.WriteString(f)
+	}
+	sb.WriteString(");")
+	return sb.String()
+}
+
+func buildInsertTyped(table string, o interface{}) string {
+	fields := getFieldList(o, false)
+	return buildInsert(table, fields...)
 }
 
 type schemaScript struct {
@@ -168,7 +212,7 @@ func upgrade() error {
 		for _, s := range ss.stmts {
 			if driver == "mysql" {
 				s = strings.Replace(s, "WITHOUT ROWID", "", 1)
-				s = strings.Replace(s, "INTEGER PRIMARY", "BIGINT(20) PRIMARY", 1)
+				s = strings.Replace(s, "INTEGER", "BIGINT(20)", 1)
 			}
 			if _, e = tx.Exec(s); e != nil {
 				tx.Rollback()

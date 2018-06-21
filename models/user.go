@@ -1,51 +1,69 @@
 package models
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 const (
-	DisabledUser  = 0
-	GeneralUser   = 1
-	ContentEditor = 2
+	GeneralUser   = 0
+	ContentEditor = 1
 	SystemAdmin   = 10
 )
 
 type User struct {
-	ID       uint64    `db:"id"`
-	WechatID string    `db:"wechat_id"`
-	Role     uint8     `db:"role"`
-	NickName string    `db:"nick_name"`
-	Avatar   string    `db:"avatar"`
-	SignUpAt time.Time `db:"sign_up_at"`
+	ID        int64     `db:"id"`
+	WxOpenID  string    `db:"wx_open_id"`
+	WxUnionID string    `db:"wx_union_id"`
+	Role      uint8     `db:"role"`
+	NickName  string    `db:"nick_name"`
+	Avatar    string    `db:"avatar"`
+	SignUpAt  time.Time `db:"sign_up_at"`
+	FoulCount uint32    `db:"foul_count"`
+	BlockedAt time.Time `db:"blocked_at"`
 }
 
-/*
-func GetUserByNickName(nickName string) (*User, error) {
-	u := &User{NickName: nickName}
-	if has, e := db.Get(u); e != nil {
+func InsertUser(u *User) (*User, error) {
+	qs := buildInsertTyped("user", u)
+
+	res, e := db.NamedExec(qs, u)
+	if e != nil {
 		return nil, e
-	} else if !has {
-		return nil, nil
 	}
+
+	id, e := res.LastInsertId()
+	if e != nil {
+		return nil, e
+	}
+
+	u.ID = id
 	return u, nil
 }
 
-func GetUserByWechatID(wxID string) (*User, error) {
-	u := &User{WechatID: wxID}
-	if has, e := db.Get(u); e != nil {
-		return nil, e
-	} else if !has {
+func GetUserByID(id int64) (*User, error) {
+	var u User
+	e := db.Get(&u, "SELECT * FROM `user` WHERE `id`=?", id)
+	if e == sql.ErrNoRows {
 		return nil, nil
 	}
-	return u, nil
+	return &u, nil
 }
 
-func SetUserRole(wxID string, role uint8) error {
-	_, e := db.Update(&User{Role: role}, &User{WechatID: wxID})
-	return e
+func GetUserByWxOpenID(id string) (*User, error) {
+	var u User
+	e := db.Get(&u, "SELECT * FROM `user` WHERE `wx_open_id`=?", id)
+	if e == sql.ErrNoRows {
+		return nil, nil
+	}
+	return &u, nil
 }
 
-func SetUserAvatar(wxID string, avatar string) error {
-	_, e := db.Update(&User{Avatar: avatar}, &User{WechatID: wxID})
-	return e
+func FindUserByNickName(name string) ([]User, error) {
+	res := make([]User, 0, 256)
+	name = "%" + name + "%"
+	e := db.Select(&res, "SELECT * FROM `user` WHERE `nick_name` LIKE ?'", name)
+	if e != nil {
+		return nil, e
+	}
+	return res, nil
 }
-*/

@@ -7,13 +7,15 @@ CREATE TABLE `options`(
 
 CREATE TABLE `question`(
 	`id` INTEGER PRIMARY KEY AUTOINCREMENT,
-	`status` TINYINT(2) NOT NULL,
-	`asked_by` BIGINT(20) NOT NULL,
+	`urgent` TINYINT(1) NOT NULL,
+	`private` TINYINT(1) NOT NULL,
+	`featured` TINYINT(1) NOT NULL,
+	`asker` BIGINT(20) NOT NULL,
 	`asked_at` DATETIME NOT NULL,
 	`content` TEXT(32767) NOT NULL,
-	`answer` TEXT(32767) NOT NULL,
-	`answered_by` BIGINT(20) NOT NULL,
-	`answered_at` DATETIME NOT NULL,
+	`reply` TEXT(32767) NOT NULL,
+	`replier` BIGINT(20) NOT NULL,
+	`replied_at` DATETIME NOT NULL,
 	`deleted_at` DATETIME NOT NULL
 	);
 
@@ -42,5 +44,3 @@ CREATE TABLE `question_tag`(
 	`tagged_by` INTEGER NOT NULL,
 	PRIMARY KEY(`tag_id`, `question_id`)
 );
-
-INSERT INTO `options`(`name`, `value`) VALUES('schema_version', '0');

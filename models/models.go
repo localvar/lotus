@@ -61,14 +61,16 @@ func isExist(tx *sqlx.Tx, qs string, arg interface{}) (bool, error) {
 	return true, nil
 }
 
-func getFieldList(o interface{}, includeID bool) []string {
-	t := reflect.TypeOf(o)
+func getFieldList(o interface{}) []string {
+	t := reflect.TypeOf(o).Elem()
 	num := t.NumField()
 	res := make([]string, 0, num)
 	for i := 0; i < num; i++ {
-		name := t.Field(i).Tag.Get("db")
-		if includeID || strings.ToLower(name) != "id" {
-			res = append(res, name)
+		tag := t.Field(i).Tag
+		if s := tag.Get("dbx"); !strings.Contains(s, "<-") {
+			if s = tag.Get("db"); s != "-" {
+				res = append(res, s)
+			}
 		}
 	}
 	return res
@@ -100,7 +102,7 @@ func buildInsert(table string, fields ...string) string {
 }
 
 func buildInsertTyped(table string, o interface{}) string {
-	fields := getFieldList(o, false)
+	fields := getFieldList(o)
 	return buildInsert(table, fields...)
 }
 
@@ -114,6 +116,9 @@ func loadSchemaScript() ([]schemaScript, error) {
 
 	f, e := os.Open("models/schema.sql")
 	if e != nil {
+		if e == os.ErrNotExist {
+			e = nil
+		}
 		return nil, e
 	}
 	defer f.Close()

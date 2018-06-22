@@ -14,7 +14,7 @@ type Option struct {
 }
 
 func GetOptionString(tx *sqlx.Tx, name string) (string, error) {
-	const qs = "SELECT * FROM `options` WHERE `name`=?"
+	const qs = "SELECT * FROM `option` WHERE `name`=?"
 
 	var (
 		e error
@@ -128,7 +128,7 @@ func GetOptionDuration(tx *sqlx.Tx, name string) (time.Duration, error) {
 }
 
 func SetOption(tx *sqlx.Tx, name string, value interface{}) error {
-	const qs = "REPLACE INTO `options`(`name`, `value`) VALUES(?, ?);"
+	const qs = "REPLACE INTO `option`(`name`, `value`) VALUES(?, ?);"
 
 	var (
 		e  error

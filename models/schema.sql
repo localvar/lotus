@@ -1,6 +1,6 @@
 -- version 0
 
-CREATE TABLE `options`(
+CREATE TABLE `option`(
 	`name` VARCHAR(63) PRIMARY KEY,
 	`value` VARCHAR(255) NOT NULL
 	) WITHOUT ROWID;
@@ -28,7 +28,8 @@ CREATE TABLE `tag`(
 
 CREATE TABLE `user`(
 	`id` INTEGER PRIMARY KEY AUTOINCREMENT,
-	`wechat_id` VARCHAR(31) NOT NULL UNIQUE,
+	`wx_open_id` VARCHAR(31) NOT NULL UNIQUE,
+	`wx_union_id` VARCHAR(31) NOT NULL UNIQUE,
 	`role` TINYINT(2) NOT NULL,
 	`nick_name` VARCHAR(127) NOT NULL,
 	`avatar` VARCHAR(511) NOT NULL,

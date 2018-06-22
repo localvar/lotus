@@ -80,7 +80,14 @@ func userFromCookie(r *http.Request) (*models.User, error) {
 	if e != nil {
 		return nil, e
 	}
-	return models.GetUserByID(id)
+	u, e := models.GetUserByID(id)
+	if e != nil {
+		return nil, e
+	}
+	if u == nil {
+		return nil, errUserNotExist
+	}
+	return u, nil
 }
 
 func serveHTTP(w http.ResponseWriter, r *http.Request) {

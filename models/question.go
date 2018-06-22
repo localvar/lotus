@@ -25,7 +25,7 @@ type Question struct {
 	Reply       string    `db:"reply" json:"reply"`
 	Replier     int64     `db:"replier" json:"-"`
 	ReplierName string    `db:"replier_name" json:"replier" dbx:"<-"`
-	ReplieddAt  time.Time `db:"replied_at" json:"repliedAt"`
+	RepliedAt   time.Time `db:"replied_at" json:"repliedAt"`
 	DeletedAt   time.Time `db:"deleted_at" json:"-"`
 	Tags        []Tag     `db:"-" json:"tags,omitempty"`
 }
@@ -118,11 +118,17 @@ func InsertQuestion(q *Question) (*Question, error) {
 	return q, nil
 }
 
+func UpdateQuestion(q *Question) error {
+	const qs = "UPDATE `question` SET `urgent`=:urgent, `private`=:private, `content`=:content WHERE `id`=:id;"
+	_, e := db.NamedExec(qs, q)
+	return e
+}
+
 const sqlSelectQuestion = "SELECT q.*, a.`nick_name` AS `asker_name`, r.`nick_name` AS `replier_name` FROM `question` AS q" +
 	" LEFT JOIN `user` AS a ON q.`asker`=a.`id`" +
 	" LEFT JOIN `user` AS r ON q.`replier`=r.`id`"
 
-func GetQuestionByID(id int64) (*Question, error) {
+func GetQuestionByID(id int64, wantTags bool) (*Question, error) {
 	var q Question
 	e := db.Get(&q, sqlSelectQuestion+" WHERE q.`id`=?;", id)
 	if e == sql.ErrNoRows {
@@ -130,8 +136,11 @@ func GetQuestionByID(id int64) (*Question, error) {
 	} else if e != nil {
 		return nil, e
 	}
-	// ignore error in tags query
-	db.Select(&q.Tags, "SELECT * FROM `tag` WHERE `id` IN (SELECT `tag_id` FROM `question_tag` WHERE `question_id`=?)", id)
+
+	if wantTags {
+		// ignore error in tags query
+		db.Select(&q.Tags, "SELECT * FROM `tag` WHERE `id` IN (SELECT `tag_id` FROM `question_tag` WHERE `question_id`=?)", id)
+	}
 	return &q, nil
 }
 

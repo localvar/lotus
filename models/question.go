@@ -130,7 +130,10 @@ func ReplyQuestion(q *Question) error {
 	return e
 }
 
-const sqlSelectQuestion = "SELECT q.*, a.`nick_name` AS `asker_name`, IFNULL(r.`nick_name`,'') AS `replier_name` FROM `question` AS q" +
+const sqlSelectQuestion = "SELECT q.*," +
+	" IFNULL(a.`nick_name`,'匿名用户') AS `asker_name`," +
+	" IFNULL(r.`nick_name`,'匿名用户') AS `replier_name`" +
+	" FROM `question` AS q" +
 	" LEFT JOIN `user` AS a ON q.`asker`=a.`id`" +
 	" LEFT JOIN `user` AS r ON q.`replier`=r.`id`"
 
@@ -197,9 +200,9 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	}
 
 	if fqa.Deleted {
-		wheres = append(wheres, "q.`deleted_at`=?")
-	} else {
 		wheres = append(wheres, "q.`deleted_at`<>?")
+	} else {
+		wheres = append(wheres, "q.`deleted_at`=?")
 	}
 	args = append(args, time.Time{})
 
@@ -208,9 +211,9 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 		args = append(args, fqa.TagID)
 	}
 
-	where := strings.Join(wheres, " AND ")
 	var sb strings.Builder
-	sb.WriteString("SELECT COUNT(1) FROM `question` AS q WHERE ")
+	sb.WriteString("SELECT COUNT(1) FROM `question` AS q")
+	where := " WHERE " + strings.Join(wheres, " AND ")
 	sb.WriteString(where)
 	sb.WriteByte(';')
 

@@ -1,24 +1,62 @@
 {[/* layout: basic */]}
 
+{[define "style"]}
+<style>
+	.clearfix:before,
+	.clearfix:after {
+		display: table;
+		content: "";
+	}
+	.clearfix:after {
+		clear: both
+	}
+	.question {
+		width: 100%;
+		height: 2.2em;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.reply {
+		width: 100%;
+		height: 2.2em;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+</style>
+{[end]}
+
 {[define "body"]}
+<el-card v-for="q in questions" :key="q.id">
+  <div slot="header" class="clearfix">
+    <span>{{q.askerName}} 问</span>
+    <el-button style="float: right; padding: 3px 0" type="text">操作按钮</el-button>
+  </div>
+  <div>
+	<div class="question">{{q.content}}</div>
+	<div v-if="q.replier" class="reply">{{q.reply}}</div>
+  </div>
+</el-card>
+
 <el-pagination
-      @current-change="onPageChange"
-      :current-page.sync="currentPage"
-      :page-size="pageSize"
-      layout="prev, pager, next, jumper"
-      :total="total">
-    </el-pagination>
+	@current-change="onPageChange"
+	:current-page.sync="currentPage"
+	:page-size="pageSize"
+	layout="prev, pager, next, jumper"
+	:total="total">
+</el-pagination>
 {[end]}
 
 {[define "script"]}
+<script>
 var vm = new Vue({
 	el: 'div#app',
 
 	data: {
-		pageSize: 20
+		pageSize: 20,
 		currentPage: 1,
 		criteria: {
 		},
+		total: 0,
 		questions:[],
 	},
 
@@ -26,7 +64,8 @@ var vm = new Vue({
 		refresh() {
 			lotus.callApi('find-question', this.criteria)
 				.then(res => {
-					this.questions = res
+					this.total = res.total
+					this.questions = res.questions
 				})
 				.catch(err => {
 					this.$notify({ type: 'error', message: err.message })
@@ -39,4 +78,5 @@ var vm = new Vue({
 })
 
 vm.refresh()
+</script>
 {[end]}

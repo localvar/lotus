@@ -18,13 +18,13 @@ type Question struct {
 	Urgent      bool      `db:"urgent" json:"urgent"`
 	Private     bool      `db:"private" json:"private"`
 	Featured    bool      `db:"featured" json:"featured"`
-	Asker       int64     `db:"asker" json:"-"`
-	AskerName   string    `db:"asker_name" json:"asker" dbx:"<-"`
+	Asker       int64     `db:"asker" json:"asker"`
+	AskerName   string    `db:"asker_name" json:"askerName" dbx:"<-"`
 	AskedAt     time.Time `db:"asked_at" json:"askedAt"`
 	Content     string    `db:"content" json:"content"`
 	Reply       string    `db:"reply" json:"reply"`
-	Replier     int64     `db:"replier" json:"-"`
-	ReplierName string    `db:"replier_name" json:"replier" dbx:"<-"`
+	Replier     int64     `db:"replier" json:"replier"`
+	ReplierName string    `db:"replier_name" json:"replierName" dbx:"<-"`
 	RepliedAt   time.Time `db:"replied_at" json:"repliedAt"`
 	DeletedAt   time.Time `db:"deleted_at" json:"-"`
 	Tags        []Tag     `db:"-" json:"tags,omitempty"`
@@ -124,7 +124,13 @@ func UpdateQuestion(q *Question) error {
 	return e
 }
 
-const sqlSelectQuestion = "SELECT q.*, a.`nick_name` AS `asker_name`, r.`nick_name` AS `replier_name` FROM `question` AS q" +
+func ReplyQuestion(q *Question) error {
+	const qs = "UPDATE `question` SET `replier`=:replier, `reply`=:reply, `replied_at`=:replied_at WHERE `id`=:id;"
+	_, e := db.NamedExec(qs, q)
+	return e
+}
+
+const sqlSelectQuestion = "SELECT q.*, a.`nick_name` AS `asker_name`, IFNULL(r.`nick_name`,'') AS `replier_name` FROM `question` AS q" +
 	" LEFT JOIN `user` AS a ON q.`asker`=a.`id`" +
 	" LEFT JOIN `user` AS r ON q.`replier`=r.`id`"
 

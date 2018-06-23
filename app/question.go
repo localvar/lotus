@@ -95,14 +95,69 @@ func onEditQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 	return q, e
 }
 
-func onAnswerQuestion(r *http.Request, q *models.Question) (interface{}, error) {
-	return nil, nil
+func onReplyQuestion(r *http.Request, q *models.Question) (interface{}, error) {
+	if q.ID == 0 {
+		return nil, errQuestionNotExist
+	}
+
+	u, e := userFromCookie(r)
+	if e != nil {
+		return nil, e
+	}
+	if u.Role == models.GeneralUser {
+		return nil, errPermissionDenied
+	}
+
+	q.RepliedAt = time.Now()
+	q.Replier = u.ID
+	if e = models.ReplyQuestion(q); e != nil {
+		return nil, e
+	}
+
+	return q, nil
+}
+
+func onRemoveQuestion(r *http.Request, arg *rpc.IDArg) error {
+	if arg.ID <= 0 {
+		return nil
+	}
+
+	u, e := userFromCookie(r)
+	if e != nil {
+		return e
+	}
+
+	q, e := models.GetQuestionByID(arg.ID, false)
+	if e != nil {
+		return e
+	}
+
+	if u.ID != q.Asker {
+		if u.Role == models.GeneralUser {
+			return errPermissionDenied
+		}
+	} else if q.Replier > 0 {
+		return errPermissionDenied
+	}
+
+	return models.RemoveQuestion(arg.ID)
+}
+
+func questionRenderList(ctx *viewContext) error {
+	return nil
+}
+
+func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, error) {
+	return models.FindQuestion(arg)
 }
 
 func questionInit() error {
-	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth|viewUseWechatJSSDK)
+	viewAddRoute("/question/list.html", questionRenderList, viewRequireOAuth)
+	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth)
 	rpc.Add("get-question-by-id", onGetQuestionByID)
 	rpc.Add("edit-question", onEditQuestion)
-	rpc.Add("answer-question", onAnswerQuestion)
+	rpc.Add("reply-question", onReplyQuestion)
+	rpc.Add("remove-question", onRemoveQuestion)
+	rpc.Add("find-question", onFindQuestion)
 	return nil
 }

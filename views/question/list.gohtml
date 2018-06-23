@@ -1,0 +1,42 @@
+{[/* layout: basic */]}
+
+{[define "body"]}
+<el-pagination
+      @current-change="onPageChange"
+      :current-page.sync="currentPage"
+      :page-size="pageSize"
+      layout="prev, pager, next, jumper"
+      :total="total">
+    </el-pagination>
+{[end]}
+
+{[define "script"]}
+var vm = new Vue({
+	el: 'div#app',
+
+	data: {
+		pageSize: 20
+		currentPage: 1,
+		criteria: {
+		},
+		questions:[],
+	},
+
+	methods: {
+		refresh() {
+			lotus.callApi('find-question', this.criteria)
+				.then(res => {
+					this.questions = res
+				})
+				.catch(err => {
+					this.$notify({ type: 'error', message: err.message })
+				})
+		},
+
+		onPageChange(val) {
+		}
+	},
+})
+
+vm.refresh()
+{[end]}

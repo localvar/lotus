@@ -2,12 +2,19 @@
 
 {[define "body"]}
 <el-row>
-	<el-col :xs="{span:24}" :sm="{span:24}" :lg="{span:5}">
-		<el-input v-model="question.content" type="textarea" :rows="10" placeholder="请输入您的问题"></el-input>
+	<el-input v-model="question.content" type="textarea" :rows="10" placeholder="请输入您的问题"></el-input>
+	<el-col :xs="{span:24}" :sm="{span:8}">
+		<el-checkbox v-model="question.urgent" border>我很着急，恳请尽快回复</el-checkbox>
 	</el-col>
-	<el-col :xs="{span:24}" :sm="{span:24}" :lg="{span:19}">
-		<el-checkbox :checked="urgent" @change="toggleUrgent">我很着急，恳请尽快回复</el-checkbox>
+	<el-col :xs="{span:24}" :sm="{span:8}">
+		<el-checkbox v-model="question.private" border>涉及隐私，请勿公开展示</el-checkbox>
+	</el-col>
+	<el-col :xs="{span:24}" :sm="{span:8}">
 		<el-button @click.prevent="submit" type="primary">提交</el-button>
+	</el-col>
+	<el-col :span="24">
+		<p>注意：对于“加急”的问题，我们会尽量提早回复，但受限于各种客观条件，如未能及时回复，还请多多谅解。为减轻工作人员的负担，请仅在确有必要的情况下选择“加急”。</p>
+		<p>我们保留对恶意行为进行处罚的权利。</p>
 	</el-col>
 </el-row>
 {[end]}
@@ -20,27 +27,39 @@ var vm = new Vue({
 
 	data: {
 		question: {
-			id: '0',
+			id: 0,
+			urgent: false,
+			private: false,
 			content: '',
-			status: 0,
 		},
 	},
 
 	methods: {
+		loadQuestion(id) {
+			lotus.callApi('get-question-by-id', {id: id})
+				.then(res => {
+					this.question = res
+				})
+				.catch(err => {
+					this.$notify({ type: 'error', message: err.message })
+				})
+		},
+
 		submit() {
-			alert('aaabbb')
+			lotus.callApi('edit-question', this.question)
+				.then(res => {
+					this.question = res
+				})
+				.catch(err => {
+					this.$notify({ type: 'error', message: err.message })
+				})
 		},
-
-		toggleUrgent(v) {
-			this.question.status = v ? 1 : 0
-		}
 	},
+});
 
-	computed: {
-		urgent() {
-			return this.question.status == 1
-		},
-	}
-})
+(function() {
+	var id = lotus.getUrlArgs().id
+	id && vm.loadQuestion(id)
+})();
 </script>
 {[end]}

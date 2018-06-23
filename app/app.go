@@ -37,12 +37,14 @@ func Uninit() error {
 //    https://domain.com/aa.html
 // may become
 //    http://127.0.0.1/aa.html
+// or
+//    /aa.html
 // this function is used to get the correct full request URL
 // note that fragement is excluded from the result
 func fullRequestURL(r *http.Request) string {
 	url := r.URL.String()
 
-	if pos := strings.IndexByte(url, '#'); pos >= 0 {
+	if pos := strings.LastIndexByte(url, '#'); pos >= 0 {
 		url = url[:pos]
 	}
 
@@ -54,8 +56,14 @@ func fullRequestURL(r *http.Request) string {
 		server = server[:l-1]
 	}
 
-	if pos := strings.IndexByte(url[8:], '/'); pos >= 0 {
-		return server + url[pos+8:]
+	pos := strings.Index(url, "://")
+	if pos == -1 {
+		return server + url
+	}
+
+	url = url[pos+3:]
+	if pos = strings.IndexByte(url, '/'); pos >= 0 {
+		return server + url[pos:]
 	}
 
 	return server

@@ -100,7 +100,7 @@ func onAnswerQuestion(r *http.Request, q *models.Question) (interface{}, error) 
 }
 
 func questionInit() error {
-	viewAddRoute("/question/edit.html", viewRenderNoop, 0)
+	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth|viewUseWechatJSSDK)
 	rpc.Add("get-question-by-id", onGetQuestionByID)
 	rpc.Add("edit-question", onEditQuestion)
 	rpc.Add("answer-question", onAnswerQuestion)

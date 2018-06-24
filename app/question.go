@@ -147,12 +147,24 @@ func questionRenderList(ctx *viewContext) error {
 	return nil
 }
 
+func questionRenderMine(ctx *viewContext) error {
+	id, e := userIDFromCookie()
+	if e != nil {
+		return e
+	}
+
+	ctx.data["userId"] = id
+	ctx.tmpl = "question/list.html"
+	return nil
+}
+
 func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, error) {
 	return models.FindQuestion(arg)
 }
 
 func questionInit() error {
 	viewAddRoute("/question/list.html", questionRenderList, viewRequireOAuth)
+	viewAddRoute("/question/mine.html", questionRenderMine, viewRequireOAuth)
 	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth)
 	rpc.Add("get-question-by-id", onGetQuestionByID)
 	rpc.Add("edit-question", onEditQuestion)

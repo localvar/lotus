@@ -26,24 +26,37 @@
 {[end]}
 
 {[define "body"]}
-<el-card v-for="q in questions" :key="q.id">
-  <div slot="header" class="clearfix">
-    <span>{{q.askerName}} 问</span>
-    <el-button style="float: right; padding: 3px 0" type="text">操作按钮</el-button>
-  </div>
-  <div>
-	<div class="question">{{q.content}}</div>
-	<div v-if="q.replier" class="reply">{{q.reply}}</div>
-  </div>
-</el-card>
+<el-row>
+	<el-col>
+	{[if .userId]}<a href="list.html">所有问题</a>{[else]}<a href="mine.html">我的问题</a>{[end]}
+		<el-checkbox-button v-model="criteria.replied" @change="refresh">只看已回答问题</el-checkbox-button>
+		<el-checkbox-button v-model="criteria.urgent" @change="refresh">只看紧急问题</el-checkbox-button>
+		<el-checkbox-button v-model="criteria.featuredOnly" @change="refresh">只看精华</el-checkbox-button>
+		<a href="edit.html">我要提问</a>
+	</el-col>
+</el-row>
+<el-row>
+	<el-col>
+		<el-card v-for="q in questions" :key="q.id">
+		<div slot="header" class="clearfix">
+			<span>{{q.askerName}} 问</span>
+			<el-button style="float: right; padding: 3px 0" type="text">操作按钮</el-button>
+		</div>
+		<div>
+			<div class="question">{{q.content}}</div>
+			<div v-if="q.replier" class="reply">{{q.reply}}</div>
+		</div>
+		</el-card>
 
-<el-pagination
-	@current-change="onPageChange"
-	:current-page.sync="currentPage"
-	:page-size="pageSize"
-	layout="prev, pager, next, jumper"
-	:total="total">
-</el-pagination>
+		<el-pagination
+			@current-change="onPageChange"
+			:current-page.sync="currentPage"
+			:page-size="pageSize"
+			layout="prev, pager, next, jumper"
+			:total="total">
+		</el-pagination>
+	</el-col>
+</el-row>
 {[end]}
 
 {[define "script"]}
@@ -55,6 +68,10 @@ var vm = new Vue({
 		pageSize: 20,
 		currentPage: 1,
 		criteria: {
+			{[if .userId]}userId: {[.userId]},{[end]}
+			urgent: false,
+			featuredOnly: false,
+			replied: true,
 		},
 		total: 0,
 		questions:[],

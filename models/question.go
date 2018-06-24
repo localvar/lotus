@@ -132,7 +132,7 @@ func ReplyQuestion(q *Question) error {
 
 const sqlSelectQuestion = "SELECT q.*," +
 	" IFNULL(a.`nick_name`,'匿名用户') AS `asker_name`," +
-	" IFNULL(r.`nick_name`,'匿名用户') AS `replier_name`" +
+	" IFNULL(r.`nick_name`,'') AS `replier_name`" +
 	" FROM `question` AS q" +
 	" LEFT JOIN `user` AS a ON q.`asker`=a.`id`" +
 	" LEFT JOIN `user` AS r ON q.`replier`=r.`id`"
@@ -220,6 +220,8 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	var result FindQuestionResult
 	if e := db.Get(&result.Total, sb.String(), args...); e != nil {
 		return nil, e
+	} else if result.Total == 0 {
+		return &result, nil
 	}
 
 	sb.Reset()

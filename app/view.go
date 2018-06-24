@@ -144,7 +144,7 @@ func viewServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := ctx.tmpl
 	if len(path) == 0 {
 		path = r.URL.Path[1:]
-		path = path[:len(path)-len(".html")] + render.Ext // html ==> {Ext}
 	}
+	path = path[:len(path)-len(".html")] + render.Ext // html ==> {Ext}
 	render.Render(w, path, ctx.data)
 }

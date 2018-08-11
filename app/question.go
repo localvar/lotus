@@ -117,7 +117,7 @@ func onReplyQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 	return q, nil
 }
 
-func onRemoveQuestion(r *http.Request, arg *rpc.IDArg) error {
+func onRemoveQuestion(r *http.Request, arg *IDArg) error {
 	if arg.ID <= 0 {
 		return nil
 	}

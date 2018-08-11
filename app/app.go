@@ -16,6 +16,10 @@ const (
 	cookieUserID = "user-id"
 )
 
+type IDArg struct {
+	ID int64 `json:"id"`
+}
+
 func Init(debug bool) error {
 	if e := wechatInit(); e != nil {
 		return e

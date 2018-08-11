@@ -6,13 +6,8 @@ import (
 	"net/http"
 )
 
-func tagRenderList(ctx *viewContext) error {
-	tags, e := models.ListTag()
-	if e != nil {
-		return e
-	}
-	ctx.data["tags"] = tags
-	return nil
+func onListTags(r *http.Request) (interface{}, error) {
+	return models.ListTag()
 }
 
 func onAddTag(r *http.Request, arg *models.Tag) (interface{}, error) {
@@ -28,7 +23,7 @@ func onAddTag(r *http.Request, arg *models.Tag) (interface{}, error) {
 	return models.InsertTag(arg)
 }
 
-func onDeleteTag(r *http.Request, arg *rpc.IDArg) error {
+func onDeleteTag(r *http.Request, arg *IDArg) error {
 	if arg.ID <= 0 {
 		return nil
 	}
@@ -46,7 +41,8 @@ func onDeleteTag(r *http.Request, arg *rpc.IDArg) error {
 }
 
 func tagInit() error {
-	viewAddRoute("/tag/list.html", tagRenderList, viewRequireOAuth)
+	viewAddRoute("/tag/list.html", viewRenderNoop, viewRequireOAuth)
+	rpc.Add("list-tags", onListTags)
 	rpc.Add("add-tag", onAddTag)
 	rpc.Add("delete-tag", onDeleteTag)
 	return nil

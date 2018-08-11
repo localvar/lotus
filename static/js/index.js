@@ -20,6 +20,8 @@ var lotus = {
 				} else {
 					reject(new Error(resp.message))
 				}
+			}).catch(err=>{
+				reject(err)
 			})
 		})
 	}

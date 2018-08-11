@@ -5,14 +5,17 @@
 </style>
 {[end]}
 
+{[define "title"]}标签管理{[end]}
+
 {[define "body"]}
-    <mt-header fixed title="标签管理"></mt-header>
-    <mt-cell v-for="tag in tags" :key="tag" :title="tag.name">
-        <mt-button @click="onRemoveTag(tag)">删除</mt-button>
+    <mt-cell v-for="tag in tags" :key="tag.id" :title="tag.name" :to="'/question/list.html?tag=' + tag.id">
+        {[if .isAdmin]}<mt-button @click="onRemoveTag(tag)">删除</mt-button>{[end]}
     </mt-cell>
-    <mt-cell>
-        <mt-button @click="onAddTag">添加新标签</mt-button>
-    </mt-cell>
+{[if .isAdmin]}
+    <mt-field v-model="tagName">
+        <mt-button @click="onAddTag">添加</mt-button>
+    </mt-field>
+{[end]}
 {[end]}
 
 {[define "script"]}
@@ -21,6 +24,7 @@
         el: 'div#app',
 
         data: {
+            tagName: '',
             tags: [],
         },
 
@@ -33,7 +37,7 @@
                        console.log(err.message)
                     })
             },
-
+    {[if .isAdmin]}
             onRemoveTag(tag) {
                 this.$messagebox.confirm('确实要删除这个标签吗？')
                     .then(_ => {
@@ -48,21 +52,19 @@
             },
 
             onAddTag() {
-                this.$messagebox.prompt('请输入标签名称')
-                    .then(({value})=>{
-                        if(value.trim().length > 0) {
-                            return lotus.callApi('add-tag', {name: value})
-                        }
-                    }).then(res => {
-                        if( res && res.id ) {
-                            this.tags.push(res);
-                        }
+                let name = this.tagName.trim()
+                if(name.length == 0) {
+                    return
+                }
+                lotus.callApi('add-tag', {name: name})
+                    .then(res => {
+                        this.tags.push(res)
+                        this.tagName = ''
                     }).catch(err => {
-                        if(err !== 'cancel') {
-                            this.$toast(err.message)
-                        }
+                        this.$toast(err.message)
                     })
             }
+    {[end]}
         },
     })
 

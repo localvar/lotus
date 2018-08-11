@@ -40,8 +40,13 @@ func onDeleteTag(r *http.Request, arg *IDArg) error {
 	return models.DeleteTag(arg.ID)
 }
 
+func tagRenderList(ctx *viewContext) error {
+	ctx.data["isAdmin"] = ctx.user.Role == models.SystemAdmin
+	return nil
+}
+
 func tagInit() error {
-	viewAddRoute("/tag/list.html", viewRenderNoop, viewRequireOAuth)
+	viewAddRoute("/tag/list.html", tagRenderList, viewRequireOAuth)
 	rpc.Add("list-tags", onListTags)
 	rpc.Add("add-tag", onAddTag)
 	rpc.Add("delete-tag", onDeleteTag)

@@ -24,5 +24,14 @@ var lotus = {
 				reject(err)
 			})
 		})
+	},
+
+	toast: weui.toast,
+    alert: weui.alert,
+
+	confirm(msg) {
+		return new Promise((resolve, reject) => {
+            weui.confirm(msg, ()=>{ resolve("ok") }, ()=>{ reject("cancel")})
+		})
 	}
 }

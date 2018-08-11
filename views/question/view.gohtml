@@ -1,0 +1,67 @@
+{[/* layout: basic */]}
+
+{[define "body"]}
+<div class="page">
+    <div class="page__bd">
+        <article class="weui-article">
+            <h1>{{question.askerName}} {{question.askedAt.substring(0,10)}} 问：</h1>
+            <section><p>{{question.content}}</p></section>
+            <template v-if="question.replier > 0">
+                <h1>{{question.replierName}} {{question.repliedAt}} 答：</h1>
+                <section><p>{{question.reply}}</p></section>
+            </template>
+        </article>
+{[if not .isGeneralUser]}
+        <div v-if="question.replier == 0" class="weui-cells weui-cells_form">
+            <div class="weui-cell">
+                <div class="weui-cell__bd">
+                    <textarea v-model="question.reply" class="weui-textarea" placeholder="请输入您的回复" rows="10"></textarea>
+                </div>
+            </div>
+            <div class="weui-btn-area">
+                <a @click="submit" class="weui-btn weui-btn_primary" href="#">提交</a>
+            </div>
+        </div>
+{[end]}
+    </div>
+</div>
+{[end]}
+
+
+{[define "script"]}
+<script>
+var vm = new Vue({
+    el: 'div#app',
+
+    data: {
+        question:{
+            id: 0,
+            urgent: false,
+            private: false,
+            content: '',
+            askerName: '',
+            askedAt: '',
+            replierName: '',
+            repliedAt: '',
+        }
+    },
+
+    methods: {
+        init(id) {
+            lotus.callApi('get-question-by-id', {id: id})
+                .then(res => {
+                    this.question = res
+                }).catch(err => {
+                    lotus.alert(err.message)
+                })
+        },
+
+        submit() {
+
+        }
+    }
+})
+
+vm.init(lotus.getUrlArgs().id)
+</script>
+{[end]}

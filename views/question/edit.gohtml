@@ -1,22 +1,30 @@
 {[/* layout: basic */]}
 
 {[define "body"]}
-<el-row>
-	<el-input v-model="question.content" type="textarea" :rows="10" placeholder="请输入您的问题"></el-input>
-	<el-col :xs="{span:24}" :sm="{span:8}">
-		<el-checkbox v-model="question.urgent" border>我很着急，恳请尽快回复</el-checkbox>
-	</el-col>
-	<el-col :xs="{span:24}" :sm="{span:8}">
-		<el-checkbox v-model="question.private" border>涉及隐私，请勿公开展示</el-checkbox>
-	</el-col>
-	<el-col :xs="{span:24}" :sm="{span:8}">
-		<el-button @click.prevent="submit" type="primary">提交</el-button>
-	</el-col>
-	<el-col :span="24">
-		<p>注意：对于“加急”的问题，我们会尽量提早回复，但受限于各种客观条件，如未能及时回复，还请多多谅解。为减轻工作人员的负担，请仅在确有必要的情况下选择“加急”。</p>
-		<p>我们保留对恶意行为进行处罚的权利。</p>
-	</el-col>
-</el-row>
+<div class="weui-cells weui-cells_form">
+    <div class="weui-cell">
+        <div class="weui-cell__bd">
+            <textarea v-model="question.content" class="weui-textarea" placeholder="请输入您的问题" rows="10"></textarea>
+        </div>
+    </div>
+
+    <div class="weui-cell weui-cell_switch">
+        <div class="weui-cell__bd">我很着急，恳请尽快回复</div>
+        <div class="weui-cell__ft">
+            <input v-model="question.urgent" class="weui-switch" type="checkbox">
+        </div>
+    </div>
+
+    <div class="weui-cell weui-cell_switch">
+        <div class="weui-cell__bd">涉及隐私，请勿公开展示</div>
+        <div class="weui-cell__ft">
+            <input v-model="question.private" class="weui-switch" type="checkbox">
+        </div>
+    </div>
+    <div class="weui-btn-area">
+        <a @click="submit" class="weui-btn weui-btn_primary" href="#">提交</a>
+    </div>
+</div>
 {[end]}
 
 
@@ -35,13 +43,12 @@ var vm = new Vue({
 	},
 
 	methods: {
-		loadQuestion(id) {
+		init(id) {
 			lotus.callApi('get-question-by-id', {id: id})
 				.then(res => {
 					this.question = res
-				})
-				.catch(err => {
-					this.$notify({ type: 'error', message: err.message })
+				}).catch(err => {
+				    lotus.alert(err.message)
 				})
 		},
 
@@ -49,9 +56,8 @@ var vm = new Vue({
 			lotus.callApi('edit-question', this.question)
 				.then(res => {
 					this.question = res
-				})
-				.catch(err => {
-					this.$notify({ type: 'error', message: err.message })
+				}).catch(err => {
+                    lotus.alert(err.message)
 				})
 		},
 	},
@@ -59,7 +65,7 @@ var vm = new Vue({
 
 (function() {
 	var id = lotus.getUrlArgs().id
-	id && vm.loadQuestion(id)
+	id && vm.init(id)
 })();
 </script>
 {[end]}

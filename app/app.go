@@ -74,6 +74,13 @@ func fullRequestURL(r *http.Request) string {
 }
 
 func userIDFromCookie(r *http.Request) (int64, error) {
+	if render.Debug {
+		id, e := strconv.ParseInt(r.URL.Query().Get("uid"), 10, 64)
+		if e == nil {
+			return id, nil
+		}
+	}
+
 	c, e := r.Cookie(cookieUserID)
 	if e != nil {
 		return 0, e

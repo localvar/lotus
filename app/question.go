@@ -158,6 +158,16 @@ func questionRenderMine(ctx *viewContext) error {
 	return nil
 }
 
+func questionRenderView(ctx *viewContext) error {
+	u, e := userFromCookie(ctx.r)
+	if e != nil {
+		return e
+	}
+
+	ctx.data["isGeneralUser"] = u.Role == models.GeneralUser
+	return nil
+}
+
 func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, error) {
 	return models.FindQuestion(arg)
 }
@@ -166,6 +176,7 @@ func questionInit() error {
 	viewAddRoute("/question/list.html", questionRenderList, viewRequireOAuth)
 	viewAddRoute("/question/mine.html", questionRenderMine, viewRequireOAuth)
 	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth)
+	viewAddRoute("/question/view.html", questionRenderView, viewRequireOAuth)
 	rpc.Add("get-question-by-id", onGetQuestionByID)
 	rpc.Add("edit-question", onEditQuestion)
 	rpc.Add("reply-question", onReplyQuestion)

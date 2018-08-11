@@ -41,7 +41,11 @@ func onDeleteTag(r *http.Request, arg *IDArg) error {
 }
 
 func tagRenderList(ctx *viewContext) error {
-	ctx.data["isAdmin"] = ctx.user.Role == models.SystemAdmin
+	u, e := viewGetUser(ctx)
+	if e != nil {
+		return e
+	}
+	ctx.data["isAdmin"] = u.Role == models.SystemAdmin
 	return nil
 }
 

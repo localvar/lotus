@@ -148,7 +148,7 @@ func questionRenderList(ctx *viewContext) error {
 }
 
 func questionRenderMine(ctx *viewContext) error {
-	id, e := userIDFromCookie()
+	id, e := userIDFromCookie(ctx.r)
 	if e != nil {
 		return e
 	}

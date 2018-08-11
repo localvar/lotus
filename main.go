@@ -41,7 +41,9 @@ func initLogger() error {
 }
 
 func main() {
-	var mode = flag.String("mode", "", "application running mode, 'debug', 'release' or 'initdb'")
+	const debug = "debug"
+
+	var mode = flag.String("mode", "", "application running mode, 'debug', 'release'")
 	flag.Parse()
 
 	// load configuration file
@@ -61,11 +63,11 @@ func main() {
 		*mode = config.GetString("/app/mode", "release")
 	}
 
-	if e := models.Init(*mode == "debug"); e != nil {
+	if e := models.Init(*mode == debug); e != nil {
 		log.Fatalln("failed to connect to database:", e.Error())
 	}
 
-	if e := app.Init(*mode == "debug"); e != nil {
+	if e := app.Init(*mode == debug); e != nil {
 		log.Fatalln("failed to initialize application:", e.Error())
 	}
 
@@ -77,6 +79,7 @@ func main() {
 	signal.Notify(interrupt, os.Interrupt)
 	signal.Notify(interrupt, os.Kill)
 	<-interrupt
+	log.Infoln("siginal 'Ctrl+C' received, exiting...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	srv.Shutdown(ctx)

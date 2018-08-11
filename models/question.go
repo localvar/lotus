@@ -50,6 +50,7 @@ func ListTag() ([]Tag, error) {
 func InsertTag(tag *Tag) (*Tag, error) {
 	qs := buildInsertTyped("tag", tag)
 
+	tag.CreatedAt = time.Now()
 	res, e := db.NamedExec(qs, tag)
 	if e != nil {
 		return nil, e

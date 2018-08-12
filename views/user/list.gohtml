@@ -1,0 +1,56 @@
+{[/* layout: basic */]}
+
+{[define "style"]}
+<style>
+</style>
+{[end]}
+
+{[define "title"]}用户管理{[end]}
+
+{[define "body"]}
+        <table>
+            <thead><tr><td>昵称</td><td>角色</td></tr></thead>
+            <tbody>
+            <tr v-for="user in users" :key="user.id" @click="'/user/index.html?id=' + user.id">
+                <td>{{user.nickName}}</td>
+                <td>{{formatRole(user.role}}</td>
+            </tr>
+            </tbody>
+        </table>
+
+{[end]}
+
+{[define "script"]}
+<script>
+var vm = new Vue({
+    el: 'div#app',
+
+    data: {
+        name: '',
+        users: [],
+    },
+
+    methods: {
+        formatRole(role) {
+            switch(role) {
+                case 0: return '普通用户';
+                case 1: return '编辑';
+                case 10: return '管理员';
+            }
+            return ''
+        },
+
+        init() {
+            lotus.callApi('find-user', {name: this.name, offset: 0, count: 1000000000})
+                .then(res => {
+                    this.users = res.users
+                }).catch(err => {
+                    console.log(err.message)
+                })
+        },
+    }
+})
+
+vm.init()
+</script>
+{[end]}

@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -58,12 +59,57 @@ func GetUserByWxOpenID(id string) (*User, error) {
 	return &u, nil
 }
 
-func FindUserByNickName(name string) ([]User, error) {
-	res := make([]User, 0, 256)
-	name = "%" + name + "%"
-	e := db.Select(&res, "SELECT * FROM `user` WHERE `nick_name` LIKE ?'", name)
+func SetUserRole(id int64, role uint8) error {
+	_, e := db.Exec("UPDATE `user` SET `role`=? WHERE `id`=?", role, id)
+	return e
+}
+
+type FindUserArg struct {
+	Name   string `json:"name"`
+	Offset int64  `json:"offset"`
+	Count  int64  `json:"count"`
+}
+
+type FindUserResult struct {
+	Total int64  `json:"total"`
+	Users []User `json:"users"`
+}
+
+func FindUser(fua *FindUserArg) (*FindUserResult, error) {
+	var result FindUserResult
+	var args []interface{}
+	var sb strings.Builder
+
+	tx, e := db.Beginx()
 	if e != nil {
 		return nil, e
 	}
-	return res, nil
+	defer tx.Rollback()
+
+	sb.WriteString("SELECT COUNT(1) FROM `user`")
+	if len(fua.Name) > 0 {
+		sb.WriteString(" WHERE `nick_name` like ?")
+		args = append(args, "%"+fua.Name+"%")
+	}
+	sb.WriteByte(';')
+
+	if e := tx.Get(&result.Total, sb.String(), args...); e != nil {
+		return nil, e
+	}
+
+	sb.Reset()
+	sb.WriteString("SELECT * FROM `user`")
+	if len(fua.Name) > 0 {
+		sb.WriteString(" WHERE `nick_name` like ?")
+	}
+
+	sb.WriteString(" LIMIT ?, ?")
+	args = append(args, fua.Offset, fua.Count)
+	sb.WriteByte(';')
+
+	if e := tx.Select(&result.Users, sb.String(), args...); e != nil {
+		return nil, e
+	}
+
+	return &result, nil
 }

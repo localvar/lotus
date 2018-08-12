@@ -73,6 +73,10 @@ func viewInit(debug bool) error {
 		return e
 	}
 
+	if e := userInit(); e != nil {
+		return e
+	}
+
 	return nil
 }
 

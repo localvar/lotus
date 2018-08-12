@@ -176,6 +176,8 @@ type FindQuestionResult struct {
 func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	var args []interface{}
 	var wheres []string
+	var sb strings.Builder
+	var result FindQuestionResult
 
 	if fqa.UserID > 0 {
 		wheres = append(wheres, "q.`asker`=?")
@@ -212,14 +214,17 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 		args = append(args, fqa.TagID)
 	}
 
-	var sb strings.Builder
 	sb.WriteString("SELECT COUNT(1) FROM `question` AS q")
 	where := " WHERE " + strings.Join(wheres, " AND ")
 	sb.WriteString(where)
 	sb.WriteByte(';')
 
-	var result FindQuestionResult
-	if e := db.Get(&result.Total, sb.String(), args...); e != nil {
+	tx, e := db.Beginx()
+	if e != nil {
+		return nil, e
+	}
+	defer tx.Rollback()
+	if e := tx.Get(&result.Total, sb.String(), args...); e != nil {
 		return nil, e
 	} else if result.Total == 0 {
 		return &result, nil
@@ -263,7 +268,7 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	}
 	sb.WriteByte(';')
 
-	if e := db.Select(&result.Questions, sb.String(), args...); e != nil {
+	if e := tx.Select(&result.Questions, sb.String(), args...); e != nil {
 		return nil, e
 	}
 

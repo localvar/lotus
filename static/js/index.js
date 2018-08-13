@@ -1,37 +1,36 @@
-var lotus = {
+let lotus = {
 	getUrlArgs() {
-		var res = new Object(), s = location.search;
+		let res = new Object(), s = location.search;
 		if (s.length == 0)
 			return res;
-		var fields = s.substring(1).split("&");
-		for (var i = 0; i < fields.length; i++) {
-			var kv = fields[i].split("=");
+		let fields = s.substring(1).split("&");
+		for (let i = 0; i < fields.length; i++) {
+			let kv = fields[i].split("=");
 			res[kv[0]] = decodeURIComponent(kv[1]);
 		}
 		return res;
 	},
 
 	callApi(name, arg) {
-		return new Promise((resolve, reject) => {
-			axios.post('/api/'+name, arg).then(resp => {
-				resp = resp.data
+        return new Promise((resolve, reject) => {
+            let url = '/api/' + name;
+
+            // the next 4 lines is for debugging
+            let uid = lotus.getUrlArgs().uid;
+            if(uid) {
+                url += '?uid=' + uid;
+            }
+
+			axios.post(url, arg).then(resp => {
+				resp = resp.data;
 				if(resp.succeeded) {
-					resolve(resp.data)
+					resolve(resp.data);
 				} else {
-					reject(new Error(resp.message))
+					reject(new Error(resp.message));
 				}
-			}).catch(err=>{
-				reject(err)
-			})
+			}).catch(err => {
+				reject(err);
+			});
 		})
 	},
-
-	toast: weui.toast,
-    alert: weui.alert,
-
-	confirm(msg) {
-		return new Promise((resolve, reject) => {
-            weui.confirm(msg, ()=>{ resolve("ok") }, ()=>{ reject("cancel")})
-		})
-	}
-}
+};

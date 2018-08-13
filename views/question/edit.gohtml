@@ -1,39 +1,35 @@
 {[/* layout: basic */]}
 
 {[define "body"]}
-<div class="weui-cells weui-cells_form">
-    <div class="weui-cell">
-        <div class="weui-cell__bd">
-            <textarea v-model="question.content" class="weui-textarea" placeholder="请输入您的问题" rows="10"></textarea>
-        </div>
-    </div>
+<mu-form :model="question">
+    <mu-form-item label="问题" prop="content" :rules="contentRules">
+        <mu-text-field multi-line :rows="10" v-model="question.content" prop="content"></mu-text-field>
+    </mu-form-item>
 
-    <div class="weui-cell weui-cell_switch">
-        <div class="weui-cell__bd">我很着急，恳请尽快回复</div>
-        <div class="weui-cell__ft">
-            <input v-model="question.urgent" class="weui-switch" type="checkbox">
-        </div>
-    </div>
+    <mu-form-item prop="urgent">
+	<mu-switch v-model="question.urgent" label="我很着急，恳请尽快回复"></mu-switch>
+    </mu-form-item>
 
-    <div class="weui-cell weui-cell_switch">
-        <div class="weui-cell__bd">涉及隐私，请勿公开展示</div>
-        <div class="weui-cell__ft">
-            <input v-model="question.private" class="weui-switch" type="checkbox">
-        </div>
-    </div>
-    <div class="weui-btn-area">
-        <a @click="submit" class="weui-btn weui-btn_primary" href="#">提交</a>
-    </div>
-</div>
+    <mu-form-item prop="private">
+	<mu-switch v-model="question.private" label="涉及隐私，请勿公开展示"></mu-switch>
+    </mu-form-item>
+
+    <mu-flex justify-content="center" align-items="center">
+        <mu-button color="primary" @click="submit">提交</mu-button>
+    </mu-flex>
+</mu-form>
 {[end]}
 
 
 {[define "script"]}
 <script>
-var vm = new Vue({
+let vm = new Vue({
 	el: 'div#app',
 
 	data: {
+		contentRules: [
+			{ validate: (val) => val.trim().length < 10, message: '问题不能短于10个字符。'},
+		],
 		question: {
 			id: 0,
 			urgent: false,
@@ -46,26 +42,26 @@ var vm = new Vue({
 		init(id) {
 			lotus.callApi('get-question-by-id', {id: id})
 				.then(res => {
-					this.question = res
+					this.question = res;
 				}).catch(err => {
-				    lotus.alert(err.message)
-				})
+				    lotus.alert(err.message);
+				});
 		},
 
 		submit() {
 			lotus.callApi('edit-question', this.question)
 				.then(res => {
-					this.question = res
+					this.question = res;
 				}).catch(err => {
-                    lotus.alert(err.message)
-				})
+				    this.$alert(err.message);
+				});
 		},
 	},
 });
 
 (function() {
-	var id = lotus.getUrlArgs().id
-	id && vm.init(id)
+	let id = lotus.getUrlArgs().id;
+	id && vm.init(id);
 })();
 </script>
 {[end]}

@@ -58,9 +58,21 @@ func GetUserByWxOpenID(id string) (*User, error) {
 	return &u, nil
 }
 
-func SetUserRole(id int64, role uint8) error {
-	_, e := db.Exec("UPDATE `user` SET `role`=? WHERE `id`=?", role, id)
-	return e
+func SetUserRole(ids []int64, role uint8) error {
+	tx, e := db.Beginx()
+	if e != nil {
+		return e
+	}
+
+	for _, id := range ids {
+		_, e := tx.Exec("UPDATE `user` SET `role`=? WHERE `id`=?", role, id)
+		if e != nil {
+			tx.Rollback()
+			return e
+		}
+	}
+
+	return tx.Commit()
 }
 
 type FindUserArg struct {

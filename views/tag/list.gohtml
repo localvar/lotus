@@ -15,7 +15,7 @@
         </mu-list-item-action>
         <mu-list-item-title><a href="'/question/list.html?tag='+tag.id">{{tag.name}}</a></mu-list-item-title>
         <mu-list-item-action @click="onDeleteTag(tag)">
-            <mu-icon value="clear" color="red"></mu-icon>
+            <mu-icon value="remove_circle" color="red"></mu-icon>
         </mu-list-item-action>
     </mu-list-item>
     <mu-list-item>
@@ -26,7 +26,7 @@
             <mu-text-field max-length="10" placeholder="请输入标签名称" v-model="newTag.name"></mu-text-field>
         </mu-list-item-title>
         <mu-list-item-action @click="onAddTag">
-            <mu-icon value="add" color="green"></mu-icon>
+            <mu-icon value="add_circle" color="green"></mu-icon>
         </mu-list-item-action>
     </mu-list-item>
 </mu-list>

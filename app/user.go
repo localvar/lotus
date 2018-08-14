@@ -1,9 +1,10 @@
 package app
 
 import (
+	"net/http"
+
 	"github.com/localvar/go-utils/rpc"
 	"github.com/localvar/lotus/models"
-	"net/http"
 )
 
 func onFindUser(r *http.Request, arg *models.FindUserArg) (*models.FindUserResult, error) {
@@ -20,8 +21,8 @@ func onFindUser(r *http.Request, arg *models.FindUserArg) (*models.FindUserResul
 }
 
 type SetUserRoleArg struct {
-	ID   int64 `json:"id"`
-	Role uint8 `json:"role"`
+	IDs  []int64 `json:"ids"`
+	Role uint8   `json:"role"`
 }
 
 func onSetUserRole(r *http.Request, arg *SetUserRoleArg) error {
@@ -34,7 +35,7 @@ func onSetUserRole(r *http.Request, arg *SetUserRoleArg) error {
 		return errPermissionDenied
 	}
 
-	return models.SetUserRole(arg.ID, arg.Role)
+	return models.SetUserRole(arg.IDs, arg.Role)
 }
 
 func userInit() error {

@@ -8,16 +8,40 @@
 {[define "title"]}用户管理{[end]}
 
 {[define "body"]}
-        <table>
-            <thead><tr><td>昵称</td><td>角色</td></tr></thead>
-            <tbody>
-            <tr v-for="user in users" :key="user.id" @click="'/user/index.html?id=' + user.id">
-                <td>{{user.nickName}}</td>
-                <td>{{formatRole(user.role}}</td>
-            </tr>
-            </tbody>
-        </table>
-
+<mu-appbar color="secondary">
+    <mu-button icon slot="left">
+        <mu-icon value="menu"></mu-icon>
+    </mu-button>
+    Contacts
+    <div slot="right">
+        <mu-button icon><mu-icon value="search"></mu-icon> </mu-button>
+        <mu-button icon @click="onSetRole"><mu-icon value="perm_identity"></mu-icon></mu-button>
+    </div>
+</mu-appbar>
+<mu-list>
+    <mu-list-item v-for="user in users" :key="user.id">
+        <mu-list-item-action>
+            <mu-checkbox v-model="user.selected"></mu-checkbox>
+        </mu-list-item-action>
+        <mu-list-item-content>
+            <mu-list-item-title>{{user.nickName}}</mu-list-item-title>
+            <mu-list-item-sub-title><mu-badge color="primary" :content="formatRole(user.role)"></mu-badge></mu-list-item-sub-title>
+        </mu-list-item-content>
+        <mu-list-item-action>
+            <mu-avatar><img :src="user.avatar"></mu-avatar>
+        </mu-list-item-action>
+    </mu-list-item>
+</mu-list>
+<mu-pagination v-if="users.length > pagination.size" @change="onPageChange" :total="users.length" :current.sync="pagination.current" :page-size="pagination.size"></mu-pagination>
+<mu-dialog :open.sync="roleDialog.visible" title="设置选中用户的角色">
+    <mu-list>
+        <mu-list-item><mu-list-item-content><mu-radio :value="0" v-model="roleDialog.role"  label="黑名单用户"></mu-radio></mu-list-item-content></mu-list-item>
+        <mu-list-item><mu-list-item-content><mu-radio :value="1" v-model="roleDialog.role"  label="普通用户"></mu-radio></mu-list-item-content></mu-list-item>
+        <mu-list-item><mu-list-item-content><mu-radio :value="2" v-model="roleDialog.role"  label="编辑"></mu-radio></mu-list-item-content></mu-list-item>
+        <mu-list-item><mu-list-item-content><mu-radio :value="10" v-model="roleDialog.role"  label="管理员"></mu-radio></mu-list-item-content></mu-list-item>
+    </mu-list>
+    <mu-button slot="actions" flat color="primary" @click="onCloseRoleDialog">确定</mu-button>
+</mu-dialog>
 {[end]}
 
 {[define "script"]}
@@ -26,6 +50,13 @@ var vm = new Vue({
     el: 'div#app',
 
     data: {
+        roleDialog: {
+            visible: false,
+        },
+        pagination: {
+            current: 1,
+            size: 10,
+        },
         name: '',
         users: [],
     },
@@ -33,24 +64,56 @@ var vm = new Vue({
     methods: {
         formatRole(role) {
             switch(role) {
-                case 0: return '普通用户';
-                case 1: return '编辑';
+                case 0: return '黑名单用户';
+                case 1: return '普通用户';
+                case 2: return '编辑';
                 case 10: return '管理员';
             }
-            return ''
+            return '';
         },
 
         init() {
             lotus.callApi('find-user', {name: this.name, offset: 0, count: 1000000000})
                 .then(res => {
-                    this.users = res.users
+                    this.users = res.users;
                 }).catch(err => {
-                    console.log(err.message)
+                    console.log(err.message);
+                });
+        },
+
+        onSetRole() {
+            for(let u of this.users) {
+                if(u.selected) {
+                    this.roleDialog.visible = true;
+                    break;
+                }
+            }
+        },
+
+        onPageChange() {
+        },
+
+        onCloseRoleDialog() {
+            this.roleDialog.visible = false;
+            let users = [], role = this.roleDialog.role, ids = [];
+            for(let u of this.users) {
+                if(u.selected) {
+                    users.push(u)
+                    ids.push(u.id)
+                }
+            }
+            lotus.callApi('set-user-role', {role: role, ids: ids})
+                .then(_ => {
+                    for(let u of users) {
+                        u.role = role;
+                    }
+                }).catch(err => {
+                    this.$alert(err.message);
                 })
         },
     }
-})
+});
 
-vm.init()
+vm.init();
 </script>
 {[end]}

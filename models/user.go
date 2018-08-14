@@ -23,6 +23,12 @@ type User struct {
 	SignUpAt  time.Time `db:"sign_up_at" json:"signUpAt"`
 }
 
+type UserEx struct {
+	User
+	QuestionCount uint32 `json:"questionCount"`
+	ReplyCount    uint32 `json:"replyCount"`
+}
+
 func InsertUser(u *User) (*User, error) {
 	qs := buildInsertTyped("user", u)
 
@@ -46,6 +52,21 @@ func GetUserByID(id int64) (*User, error) {
 	if e == sql.ErrNoRows {
 		return nil, nil
 	}
+
+	return &u, nil
+}
+
+func GetUserExByID(id int64) (*UserEx, error) {
+	var u UserEx
+	e := db.Get(&u.User, "SELECT * FROM `user` WHERE `id`=?", id)
+	if e == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	// ignore error of below lines
+	db.Get(&u.QuestionCount, "SELECT COUNT(1) FROM `question` WHERE `asker`=?", id)
+	db.Get(&u.ReplyCount, "SELECT COUNT(1) FROM `question` WHERE `replier`=?", id)
+
 	return &u, nil
 }
 
@@ -125,9 +146,7 @@ func FindUser(fua *FindUserArg) (*FindUserResult, error) {
 
 	if e := tx.Get(&result.Total, sb.String(), args...); e != nil {
 		return nil, e
-	}
-
-	if result.Total == 0 {
+	} else if result.Total == 0 {
 		return &result, nil
 	}
 

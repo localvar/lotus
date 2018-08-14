@@ -70,7 +70,7 @@ func UpdateTag(tag *Tag) error {
 	const qs = "UPDATE `tag` SET `name`=:name, `color`=:color WHERE `id`=:id;"
 	_, e := db.NamedExec(qs, tag)
 	return e
-	
+
 }
 
 func DeleteTag(id int64) error {
@@ -163,22 +163,24 @@ func GetQuestionByID(id int64, wantTags bool) (*Question, error) {
 }
 
 type FindQuestionArg struct {
-	UserID        int64 `json:"userId"`
-	TagID         int64 `json:"tagId"`
-	Urgent        bool  `json:"urgent"`
-	PublicOnly    bool  `json:"publicOnly"`
-	FeaturedOnly  bool  `json:"featuredOnly"`
-	Replied       bool  `json:"replied"`
-	Deleted       bool  `json:"deleted"`
-	FeaturedFirst bool  `json:"featuredFirst"`
-	Ascending     bool  `json:"ascending"`
-	Offset        int64 `json:"offset"`
-	Count         int64 `json:"count"`
+	UserID        int64  `json:"userId"`
+	TagID         int64  `json:"tagId"`
+	Urgent        bool   `json:"urgent"`
+	PublicOnly    bool   `json:"publicOnly"`
+	FeaturedOnly  bool   `json:"featuredOnly"`
+	Replied       bool   `json:"replied"`
+	Deleted       bool   `json:"deleted"`
+	FeaturedFirst bool   `json:"featuredFirst"`
+	Ascending     bool   `json:"ascending"`
+	PageSize      uint64 `json:"pageSize"`
+	PageNumber    uint64 `json:"pageNumber"`
 }
 
 type FindQuestionResult struct {
-	Total     int64      `json:"total"`
-	Questions []Question `json:"questions"`
+	Total      uint64     `json:"total"`
+	PageSize   uint64     `json:"pageSize"`
+	PageNumber uint64     `json:"pageNumber"`
+	Questions  []Question `json:"questions"`
 }
 
 func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
@@ -186,6 +188,17 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	var wheres []string
 	var sb strings.Builder
 	var result FindQuestionResult
+
+	if fqa.PageSize == 0 {
+		fqa.PageSize = 1
+	}
+	result.PageSize = fqa.PageSize
+
+	tx, e := db.Beginx()
+	if e != nil {
+		return nil, e
+	}
+	defer tx.Rollback()
 
 	if fqa.UserID > 0 {
 		wheres = append(wheres, "q.`asker`=?")
@@ -227,15 +240,14 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	sb.WriteString(where)
 	sb.WriteByte(';')
 
-	tx, e := db.Beginx()
-	if e != nil {
-		return nil, e
-	}
-	defer tx.Rollback()
 	if e := tx.Get(&result.Total, sb.String(), args...); e != nil {
 		return nil, e
 	} else if result.Total == 0 {
 		return &result, nil
+	}
+
+	if fqa.PageSize*fqa.PageNumber >= result.Total {
+		fqa.PageNumber = (result.Total+fqa.PageSize-1)/fqa.PageSize - 1
 	}
 
 	sb.Reset()
@@ -264,22 +276,15 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	sb.WriteString(" ORDER BY ")
 	sb.WriteString(orderby)
 
-	if fqa.Count > 0 {
-		if fqa.Offset > result.Total {
-			return &result, nil
-		}
-		if fqa.Offset+fqa.Count > result.Total {
-			fqa.Count = result.Total - fqa.Offset
-		}
-		sb.WriteString(" LIMIT ?, ?")
-		args = append(args, fqa.Offset, fqa.Count)
-	}
+	sb.WriteString(" LIMIT ?, ?")
+	args = append(args, fqa.PageNumber*fqa.PageSize, fqa.PageSize)
 	sb.WriteByte(';')
 
 	if e := tx.Select(&result.Questions, sb.String(), args...); e != nil {
 		return nil, e
 	}
 
+	result.PageNumber = fqa.PageNumber
 	return &result, nil
 }
 

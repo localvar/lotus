@@ -28,7 +28,7 @@
             <mu-list-item-sub-title><mu-badge color="primary" :content="formatRole(user.role)"></mu-badge></mu-list-item-sub-title>
         </mu-list-item-content>
         <mu-list-item-action>
-            <mu-avatar><a :href="'/question/list.html?user='+user.id"><img :src="user.avatar"></a></mu-avatar>
+            <mu-avatar><a :href="'/user/index.html?id='+user.id"><img :src="user.avatar"></a></mu-avatar>
         </mu-list-item-action>
     </mu-list-item>
 </mu-list>
@@ -60,16 +60,11 @@
 
 {[define "script"]}
 <script>
-var vm = new Vue({
+let vm = new Vue({
     el: 'div#app',
 
     data: {
-        roles: [
-            {value: 1, name: '黑名单用户'},
-            {value: 2, name: '普通用户'},
-            {value: 3, name: '编辑'},
-            {value: 10, name: '管理员'},
-        ],
+        roles: lotus.roles,
 
         roleDialog: {
             visible: false,
@@ -92,12 +87,7 @@ var vm = new Vue({
     },
 
     methods: {
-        formatRole(role) {
-            for(let r of this.roles)
-                if(role == r.value)
-                    return r.name;
-            return '';
-        },
+        formatRole: lotus.formatRole,
 
         findUser() {
             let args = {

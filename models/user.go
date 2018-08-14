@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	BlockedUser   = 0
-	GeneralUser   = 1
-	ContentEditor = 2
+	BlockedUser   = 1
+	GeneralUser   = 2
+	ContentEditor = 3
 	SystemAdmin   = 10
 )
 
@@ -76,21 +76,29 @@ func SetUserRole(ids []int64, role uint8) error {
 }
 
 type FindUserArg struct {
-	Role   uint8  `json:"role"`
-	Name   string `json:"name"`
-	Offset int64  `json:"offset"`
-	Count  int64  `json:"count"`
+	Role       uint8  `json:"role"`
+	NickName   string `json:"nickName"`
+	PageSize   uint32 `json:"pageSize"`
+	PageNumber uint32 `json:"pageNumber"`
 }
 
 type FindUserResult struct {
-	Total int64  `json:"total"`
-	Users []User `json:"users"`
+	Total      uint32 `json:"total"`
+	PageSize   uint32 `json:"pageSize"`
+	PageNumber uint32 `json:"pageNumber"`
+	Users      []User `json:"users"`
 }
 
 func FindUser(fua *FindUserArg) (*FindUserResult, error) {
-	var result FindUserResult
 	var args []interface{}
+	var wheres []string
 	var sb strings.Builder
+	var result FindUserResult
+
+	if fua.PageSize == 0 {
+		fua.PageSize = 1
+	}
+	result.PageSize = fua.PageSize
 
 	tx, e := db.Beginx()
 	if e != nil {
@@ -98,10 +106,20 @@ func FindUser(fua *FindUserArg) (*FindUserResult, error) {
 	}
 	defer tx.Rollback()
 
+	if fua.Role > 0 {
+		wheres = append(wheres, "`role`=?")
+		args = append(args, fua.Role)
+	}
+
+	if len(fua.NickName) > 0 {
+		wheres = append(wheres, "`nick_name` like ?")
+		args = append(args, "%"+fua.NickName+"%")
+	}
+
 	sb.WriteString("SELECT COUNT(1) FROM `user`")
-	if len(fua.Name) > 0 {
-		sb.WriteString(" WHERE `nick_name` like ?")
-		args = append(args, "%"+fua.Name+"%")
+	if len(wheres) > 0 {
+		where := "WHERE " + strings.Join(wheres, " AND ")
+		sb.WriteString(where)
 	}
 	sb.WriteByte(';')
 
@@ -109,19 +127,29 @@ func FindUser(fua *FindUserArg) (*FindUserResult, error) {
 		return nil, e
 	}
 
+	if result.Total == 0 {
+		return &result, nil
+	}
+
+	if fua.PageSize*fua.PageNumber >= result.Total {
+		fua.PageNumber = (result.Total+fua.PageSize-1)/fua.PageSize - 1
+	}
+
 	sb.Reset()
 	sb.WriteString("SELECT * FROM `user`")
-	if len(fua.Name) > 0 {
-		sb.WriteString(" WHERE `nick_name` like ?")
+	if len(wheres) > 0 {
+		where := "WHERE " + strings.Join(wheres, " AND ")
+		sb.WriteString(where)
 	}
 
 	sb.WriteString(" LIMIT ?, ?")
-	args = append(args, fua.Offset, fua.Count)
+	args = append(args, fua.PageNumber*fua.PageSize, fua.PageSize)
 	sb.WriteByte(';')
 
 	if e := tx.Select(&result.Users, sb.String(), args...); e != nil {
 		return nil, e
 	}
 
+	result.PageNumber = fua.PageNumber
 	return &result, nil
 }

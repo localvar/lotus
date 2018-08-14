@@ -25,15 +25,24 @@ type viewContext struct {
 type viewHandlerFunc func(vc *viewContext) error
 
 type viewRoute struct {
-	handler viewHandlerFunc
-	attr    uint
+	handler  viewHandlerFunc
+	attr     uint32
+	roleMask uint32
 }
 
-func viewAddRoute(path string, handler viewHandlerFunc, attr uint) {
+func makeRoleMask(roles ...uint8) uint32 {
+	var mask uint32
+	for _, r := range roles {
+		mask |= 1 << uint32(r)
+	}
+	return mask
+}
+
+func viewAddRoute(path string, handler viewHandlerFunc, attr uint32, roleMask uint32) {
 	if _, ok := viewRoutes[path]; ok {
 		panic(fmt.Errorf("route '%v' already registered", path))
 	}
-	viewRoutes[path] = &viewRoute{handler: handler, attr: attr}
+	viewRoutes[path] = &viewRoute{handler: handler, attr: attr, roleMask: roleMask}
 }
 
 func viewFindRoute(path string) *viewRoute {
@@ -136,6 +145,18 @@ func viewServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if e != nil {
 				viewRenderError(&ctx, e)
 			}
+			return
+		}
+	}
+
+	if vr.roleMask != 0 {
+		u, e := viewGetUser(&ctx)
+		if e != nil {
+			viewRenderError(&ctx, e)
+			return
+		}
+		if vr.roleMask&(1<<uint32(u.Role)) == 0 {
+			viewRenderError(&ctx, errPermissionDenied)
 			return
 		}
 	}

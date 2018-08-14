@@ -38,7 +38,7 @@ func onSetUserRole(r *http.Request, arg *SetUserRoleArg) error {
 }
 
 func userInit() error {
-	viewAddRoute("/user/list.html", viewRenderNoop, viewRequireOAuth)
+	viewAddRoute("/user/list.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.SystemAdmin))
 	rpc.Add("find-user", onFindUser)
 	rpc.Add("set-user-role", onSetUserRole)
 	return nil

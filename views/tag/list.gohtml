@@ -54,9 +54,9 @@ let vm = new Vue({
         colorDialogVisible: false,
         newTag: {
             name: '',
-            color: '#ccc'
+            color: 'grey'
         },
-        currentColor: {hex: '#ccc'},
+        currentColor: {hex: 'grey'},
         currentTag: null,
         tags: [],
     },
@@ -72,7 +72,7 @@ let vm = new Vue({
         },
 
         onDeleteTag(tag) {
-            this.$confirm('确实要删除这个标签"'+tag.name+'"吗？标签与问题的关联关系会被同时删除。')
+            this.$confirm('确实要删除标签"'+tag.name+'"吗？标签与问题的关联关系将被同时删除。')
                 .then(data => {
                     if(data.result) {
                         return lotus.callApi('delete-tag', {id: tag.id});
@@ -131,7 +131,7 @@ let vm = new Vue({
             lotus.callApi('add-tag', {name: name, color: this.newTag.color})
                 .then(res => {
                     this.tags.push(res);
-                    this.newTag.color = '#ccc';
+                    this.newTag.color = 'grey';
                 }).catch(err => {
                     this.$alert(err.message);
                     this.newTag.name = name;

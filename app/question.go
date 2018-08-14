@@ -173,10 +173,10 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 }
 
 func questionInit() error {
-	viewAddRoute("/question/list.html", questionRenderList, viewRequireOAuth)
-	viewAddRoute("/question/mine.html", questionRenderMine, viewRequireOAuth)
-	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth)
-	viewAddRoute("/question/view.html", questionRenderView, viewRequireOAuth)
+	viewAddRoute("/question/list.html", questionRenderList, viewRequireOAuth, 0)
+	viewAddRoute("/question/mine.html", questionRenderMine, viewRequireOAuth, 0)
+	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth, 0)
+	viewAddRoute("/question/view.html", questionRenderView, viewRequireOAuth, 0)
 	rpc.Add("get-question-by-id", onGetQuestionByID)
 	rpc.Add("edit-question", onEditQuestion)
 	rpc.Add("reply-question", onReplyQuestion)

@@ -24,10 +24,6 @@ func onAddTag(r *http.Request, arg *models.Tag) (interface{}, error) {
 }
 
 func onDeleteTag(r *http.Request, arg *IDArg) error {
-	if arg.ID <= 0 {
-		return nil
-	}
-
 	u, e := userFromCookie(r)
 	if e != nil {
 		return e
@@ -51,17 +47,8 @@ func onUpdateTag(r *http.Request, arg *models.Tag) error {
 	return models.UpdateTag(arg)
 }
 
-func tagRenderList(ctx *viewContext) error {
-	u, e := viewGetUser(ctx)
-	if e != nil {
-		return e
-	}
-	ctx.data["isAdmin"] = u.Role == models.SystemAdmin
-	return nil
-}
-
 func tagInit() error {
-	viewAddRoute("/tag/list.html", tagRenderList, viewRequireOAuth)
+	viewAddRoute("/tag/list.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.SystemAdmin))
 	rpc.Add("list-tags", onListTags)
 	rpc.Add("add-tag", onAddTag)
 	rpc.Add("update-tag", onUpdateTag)

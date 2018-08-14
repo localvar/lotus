@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	GeneralUser   = 0
-	ContentEditor = 1
+	BlockedUser   = 0
+	GeneralUser   = 1
+	ContentEditor = 2
 	SystemAdmin   = 10
 )
 
@@ -20,8 +21,6 @@ type User struct {
 	NickName  string    `db:"nick_name" json:"nickName"`
 	Avatar    string    `db:"avatar" json:"avatar"`
 	SignUpAt  time.Time `db:"sign_up_at" json:"signUpAt"`
-	FoulCount uint32    `db:"foul_count" json:"foulCount"`
-	BlockedAt time.Time `db:"blocked_at" json:"blockedAt"`
 }
 
 func InsertUser(u *User) (*User, error) {
@@ -65,6 +64,7 @@ func SetUserRole(id int64, role uint8) error {
 }
 
 type FindUserArg struct {
+	Role   uint8  `json:"role"`
 	Name   string `json:"name"`
 	Offset int64  `json:"offset"`
 	Count  int64  `json:"count"`

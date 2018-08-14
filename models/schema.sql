@@ -22,6 +22,7 @@ CREATE TABLE `question`(
 CREATE TABLE `tag`(
 	`id` INTEGER PRIMARY KEY AUTOINCREMENT,
 	`name` VARCHAR(63) NOT NULL UNIQUE,
+	`color` VARCHAR(31) NOT NULL,
 	`created_at` DATETIME NOT NULL,
 	`created_by` INTEGER NOT NULL
 );
@@ -33,9 +34,7 @@ CREATE TABLE `user`(
 	`role` TINYINT(2) NOT NULL,
 	`nick_name` VARCHAR(127) NOT NULL,
 	`avatar` VARCHAR(511) NOT NULL,
-	`sign_up_at` DATETIME NOT NULL,
-	`foul_count` INT(10) NOT NULL,
-	`blocked_at` DATETIME NOT NULL
+	`sign_up_at` DATETIME NOT NULL
 );
 
 CREATE TABLE `question_tag`(

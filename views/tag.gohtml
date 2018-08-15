@@ -25,11 +25,14 @@
         </mu-list-item-action>
     </mu-list-item>
 </mu-list>
-<p>标签名称最长10个字符，添加后不可修改。</p>
-<p>点击标签名称左侧的调色板图标，可以设置标签颜色。</p>
 
-<mu-dialog :open="colorDialogVisible">
-    <div id="color-picker-wrapper"> <sketch-picker v-model="currentColor" /> </div>
+<div style="text-align:center; font-size:12px; font-weight:400;">
+<p>标签名称最长10个字符，添加后不可修改。<br>
+点击标签名称左侧的调色板图标，可以设置标签颜色。</p>
+</div>
+
+<mu-dialog :open.sync="colorDialog.visible">
+    <div id="color-picker-wrapper"> <sketch-picker v-model="colorDialog.color" /> </div>
     <mu-button slot="actions" flat color="primary" @click="onCloseColorDialog">确定</mu-button>
 </mu-dialog>
 {[end]}
@@ -43,12 +46,14 @@ let vm = new Vue(lotus.buildVueConfig({
         'sketch-picker': VueColor.Sketch,
     },
     data: {
-        colorDialogVisible: false,
+        colorDialog: {
+		visible: false,
+		color: {hex: 'grey'}
+	},
         newTag: {
             name: '',
             color: 'grey'
         },
-        currentColor: {hex: 'grey'},
         currentTag: null,
         tags: [],
     },
@@ -80,14 +85,14 @@ let vm = new Vue(lotus.buildVueConfig({
         },
 
         onCloseColorDialog() {
-            this.colorDialogVisible = false;
+            this.colorDialog.visible = false;
             if(!this.currentTag) {
-                this.newTag.color = this.currentColor.hex;
+                this.newTag.color = this.colorDialog.color.hex;
                 return;
             }
 
             let tag = this.currentTag;
-            let color = this.currentColor.hex;
+            let color = this.colorDialog.color.hex;
             lotus.callApi('update-tag', {id: tag.id, name: tag.name, color: color})
                 .then(_ => {
                     this.currentTag.color = color;
@@ -97,8 +102,8 @@ let vm = new Vue(lotus.buildVueConfig({
         },
 
         showColorDialog(color) {
-            this.currentColor = {hex: color};
-            this.colorDialogVisible = true;
+            this.colorDialog.color = {hex: color};
+            this.colorDialog.visible = true;
             Vue.nextTick(() => {
                 document.getElementById("color-picker-wrapper").parentNode.style.padding = 0;
             });

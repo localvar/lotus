@@ -1,22 +1,21 @@
 {[/* layout: basic */]}
 
+{[define "title"]}提问{[end]}
+
+{[define "appBar"]}
+    <mu-button flat slot="right" @click="onSubmit">提交</mu-button>
+{[end]}
+
 {[define "body"]}
 <mu-form ref="form" :model="question">
-    <mu-form-item label="问题" prop="content" :rules="contentRules">
-        <mu-text-field multi-line :rows="10" v-model="question.content" prop="content"></mu-text-field>
+    <mu-form-item prop="content" :rules="contentRules">
+        <mu-text-field multi-line :rows="10" v-model="question.content" placeholder="请在这里输入问题"></mu-text-field>
     </mu-form-item>
 
-    <mu-form-item prop="urgent">
+    <mu-form-item>
 	<mu-switch v-model="question.urgent" label="我很着急，恳请尽快回复"></mu-switch>
-    </mu-form-item>
-
-    <mu-form-item prop="private">
 	<mu-switch v-model="question.private" label="涉及隐私，请勿公开展示"></mu-switch>
     </mu-form-item>
-
-    <mu-flex justify-content="center" align-items="center">
-        <mu-button color="primary" @click="submit">提交</mu-button>
-    </mu-flex>
 </mu-form>
 {[end]}
 
@@ -48,12 +47,12 @@ let vm = new Vue(lotus.buildVueConfig({
 				});
 		},
 
-		submit() {
+		onSubmit() {
 			this.$refs.form.validate()
 				.then(res => {
 					return res && lotus.callApi('edit-question', this.question)
 				}).then(res => {
-					return res && this.$message.alert('提问成功，点击“确定”按钮返回问题列表。');
+					return res && this.$message.alert('提交成功，点击“确定”按钮返回问题列表。');
 				}).then(res => {
 					res && (location.href = '/question/mine.html');
 				}).catch(err => {

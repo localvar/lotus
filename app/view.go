@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/localvar/go-utils/layout"
@@ -72,6 +73,20 @@ func viewInit(debug bool) error {
 		LeftDelim:  "{[",
 		RightDelim: "]}",
 		Ext:        ".gohtml",
+		Funcs: template.FuncMap{
+			"IsAdmin": func(role uint8) bool {
+				return role == models.SystemAdmin
+			},
+			"IsEditor": func(role uint8) bool {
+				return role == models.ContentEditor
+			},
+			"IsGeneralUser": func(role uint8) bool {
+				return role == models.GeneralUser
+			},
+			"IsBlockedUser": func(role uint8) bool {
+				return role == models.BlockedUser
+			},
+		},
 	})
 
 	if e := questionInit(); e != nil {
@@ -149,17 +164,16 @@ func viewServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if vr.roleMask != 0 {
-		u, e := viewGetUser(&ctx)
-		if e != nil {
-			viewRenderError(&ctx, e)
-			return
-		}
-		if vr.roleMask&(1<<uint32(u.Role)) == 0 {
-			viewRenderError(&ctx, errPermissionDenied)
-			return
-		}
+	u, e := viewGetUser(&ctx)
+	if e != nil {
+		viewRenderError(&ctx, e)
+		return
 	}
+	if (vr.roleMask != 0) && (vr.roleMask&(1<<uint32(u.Role)) == 0) {
+		viewRenderError(&ctx, errPermissionDenied)
+		return
+	}
+	ctx.data["user"] = u
 
 	if e := vr.handler(&ctx); e != nil {
 		viewRenderError(&ctx, e)

@@ -5,10 +5,9 @@ import (
 
 	"github.com/localvar/go-utils/rpc"
 	"github.com/localvar/lotus/models"
-	"strconv"
 )
 
-func onFindUser(r *http.Request, arg *models.FindUserArg) (*models.FindUserResult, error) {
+func onFindUser(r *http.Request, arg *models.FindUserArg) (interface{}, error) {
 	u, e := userFromCookie(r)
 	if e != nil {
 		return nil, e
@@ -39,35 +38,21 @@ func onSetUserRole(r *http.Request, arg *SetUserRoleArg) error {
 	return models.SetUserRole(arg.IDs, arg.Role)
 }
 
-func userRenderIndex(ctx *viewContext) error {
-	sid := ctx.r.URL.Query().Get("id")
-	id, e := strconv.ParseInt(sid, 10, 64)
+func onGetUserByID(r *http.Request, arg *IDArg) (interface{}, error) {
+	ue, e := models.GetUserExByID(arg.ID)
 	if e != nil {
-		return e
-	}
-
-	ue, e := models.GetUserExByID(id)
-	if e != nil {
-		return e
+		return nil, e
 	} else if ue == nil {
-		return errUserNotExist
+		return nil, errUserNotExist
 	}
-
-	ctx.data["user"] = ue
-
-	u, e := viewGetUser(ctx)
-	if e != nil {
-		return e
-	}
-
-	ctx.data["isAdmin"] = u.Role == models.SystemAdmin
-	return nil
+	return ue, nil
 }
 
 func userInit() error {
-	viewAddRoute("/user/index.html", userRenderIndex, viewRequireOAuth, 0)
+	viewAddRoute("/user/index.html", viewRenderNoop, viewRequireOAuth, 0)
 	viewAddRoute("/user/list.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.SystemAdmin))
 	rpc.Add("find-user", onFindUser)
 	rpc.Add("set-user-role", onSetUserRole)
+	rpc.Add("get-user-by-id", onGetUserByID)
 	return nil
 }

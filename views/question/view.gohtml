@@ -30,7 +30,7 @@
 
 {[define "script"]}
 <script>
-var vm = new Vue({
+var vm = new Vue(lotus.buildVueConfig({
     el: 'div#app',
 
     data: {
@@ -50,18 +50,18 @@ var vm = new Vue({
         init(id) {
             lotus.callApi('get-question-by-id', {id: id})
                 .then(res => {
-                    this.question = res
+                    this.question = res;
                 }).catch(err => {
-                    lotus.alert(err.message)
-                })
+                    lotus.alert(err.message);
+                });
         },
 
         submit() {
 
         }
-    }
-})
+    },
+}));
 
-vm.init(lotus.getUrlArgs().id)
+vm.init(lotus.getUrlArgs().id);
 </script>
 {[end]}

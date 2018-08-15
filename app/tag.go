@@ -1,9 +1,10 @@
 package app
 
 import (
+	"net/http"
+
 	"github.com/localvar/go-utils/rpc"
 	"github.com/localvar/lotus/models"
-	"net/http"
 )
 
 func onListTags(r *http.Request) (interface{}, error) {
@@ -48,7 +49,7 @@ func onUpdateTag(r *http.Request, arg *models.Tag) error {
 }
 
 func tagInit() error {
-	viewAddRoute("/tag/list.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.SystemAdmin))
+	viewAddRoute("/tag.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.SystemAdmin))
 	rpc.Add("list-tags", onListTags)
 	rpc.Add("add-tag", onAddTag)
 	rpc.Add("update-tag", onUpdateTag)

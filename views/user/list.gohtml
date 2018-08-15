@@ -7,17 +7,14 @@
 
 {[define "title"]}用户管理{[end]}
 
-{[define "body"]}
-<mu-appbar color="primary">
-    <mu-button icon slot="left">
-        <mu-icon value="menu"></mu-icon>
-    </mu-button>
+{[define "appBar"]}
     <div slot="right">
         <mu-button icon @click="onShowFilterDialog"><mu-icon value="filter_list"></mu-icon></mu-button>
         <mu-button icon @click="onShowRoleDialog"><mu-icon value="perm_identity"></mu-icon></mu-button>
     </div>
-</mu-appbar>
+{[end]}
 
+{[define "body"]}
 <mu-list>
     <mu-list-item avatar v-for="user in users" :key="user.id">
         <mu-list-item-action>
@@ -60,7 +57,7 @@
 
 {[define "script"]}
 <script>
-let vm = new Vue({
+let vm = new Vue(lotus.buildVueConfig({
     el: 'div#app',
 
     data: {
@@ -149,7 +146,7 @@ let vm = new Vue({
             this.findUser()
         },
     }
-});
+}));
 
 vm.findUser();
 </script>

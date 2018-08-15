@@ -1,0 +1,58 @@
+{[/* layout: basic */]}
+
+{[define "title"]}用户信息{[end]}
+
+{[define "body"]}
+<mu-container>
+    <mu-card style="width: 100%; margin: 0 auto;">
+        <mu-card-header :title="user.nickName" :sub-title="formatRole(user.role)">
+            <mu-avatar slot="avatar">
+                <img :src="user.avatar">
+            </mu-avatar>
+        </mu-card-header>
+        <mu-card-text>
+            <mu-list dense>
+                <mu-list-item>
+                    <mu-list-item-content><mu-list-item-title>注册日期</mu-list-item-title></mu-list-item-content>
+                    <mu-list-item-action ><mu-list-item-after-text>{{user.signUpAt.substring(0,10)}}</mu-list-item-after-text></mu-list-item-action>
+                </mu-list-item>
+                <mu-list-item>
+                    <mu-list-item-content><mu-list-item-title>提问数量</mu-list-item-title></mu-list-item-content>
+                    <mu-list-item-action >
+                        <mu-list-item-after-text><a :href="'/question/list.html?asker='+user.id">{{user.questionCount}}</a></mu-list-item-after-text>
+                    </mu-list-item-action>
+                </mu-list-item>
+                <mu-list-item>
+                    <mu-list-item-content><mu-list-item-title>回复数量</mu-list-item-title></mu-list-item-content>
+                    <mu-list-item-action>
+                        <mu-list-item-after-text><a :href="'/question/list.html?replier='+user.id">{{user.replyCount}}</a></mu-list-item-after-text>
+                    </mu-list-item-action>
+                </mu-list-item>
+            </mu-list>
+        </mu-card-text>
+{[if .isAdmin]}
+        <mu-card-actions>
+            <mu-button flat>Action 1</mu-button>
+            <mu-button flat>Action 2</mu-button>
+        </mu-card-actions>
+{[end]}
+    </mu-card>
+</mu-container>
+{[end]}
+
+{[define "script"]}
+<script>
+let vm = new Vue(lotus.buildVueConfig({
+    el: 'div#app',
+
+    data: {
+        roles: lotus.roles,
+        user: {[.user]},
+    },
+
+    methods: {
+       formatRole: lotus.formatRole,
+    },
+}));
+</script>
+{[end]}

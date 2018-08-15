@@ -16,6 +16,26 @@
 
 <body>
     <div id="app">
+        <mu-appbar color="primary">
+            <mu-button icon slot="left" @click="showDrawer = true">
+                <mu-icon value="menu"></mu-icon>
+            </mu-button>
+            {[block "appBar" .]}{[end]}
+        </mu-appbar>
+
+        <mu-drawer :open.sync="showDrawer" :docked="false">
+            <mu-list>
+                <mu-list-item button @click="onUserManagement">
+                    <mu-list-item-title>用户管理</mu-list-item-title>
+                </mu-list-item>
+                <mu-list-item button @click="onTagManagement">
+                    <mu-list-item-title>标签管理</mu-list-item-title>
+                </mu-list-item>
+                <mu-list-item  @click="showDrawer = false" button>
+                    <mu-list-item-title>关闭</mu-list-item-title>
+                </mu-list-item>
+            </mu-list>
+        </mu-drawer>
         {[block "body" .]}{[end]}
     </div>
     <script src="//cdn.bootcss.com/vue/2.5.16/vue{[if not .debug]}.min{[end]}.js"></script>
@@ -35,6 +55,18 @@
 {[end]}
 
     <script src="/static/js/index.js"></script>
+    <script>
+    lotus.buildVueConfig = cfg => {
+        cfg.data.showDrawer = false;
+        cfg.methods.onUserManagement = () => {
+            location.href = "/user/list.html";
+        };
+        cfg.methods.onTagManagement = () => {
+            location.href = "/tag.html";
+        };
+        return cfg;
+    };
+    </script>
     {[block "script" .]}{[end]}
 </body>
 

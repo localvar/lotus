@@ -61,7 +61,7 @@
 
 {[define "script"]}
 <script>
-var vm = new Vue({
+var vm = new Vue(lotus.buildVueConfig({
 	el: 'div#app',
 
 	data: {
@@ -81,19 +81,19 @@ var vm = new Vue({
 		refresh() {
 			lotus.callApi('find-question', this.criteria)
 				.then(res => {
-					this.total = res.total
-					this.questions = res.questions
+					this.total = res.total;
+					this.questions = res.questions;
 				})
 				.catch(err => {
-					this.$notify({ type: 'error', message: err.message })
-				})
+					this.$notify({ type: 'error', message: err.message });
+				});
 		},
 
 		onPageChange(val) {
 		}
 	},
-})
+}));
 
-vm.refresh()
+vm.refresh();
 </script>
 {[end]}

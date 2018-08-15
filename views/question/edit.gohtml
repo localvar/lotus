@@ -23,7 +23,7 @@
 
 {[define "script"]}
 <script>
-let vm = new Vue({
+let vm = new Vue(lotus.buildVueConfig({
 	el: 'div#app',
 
 	data: {
@@ -57,7 +57,7 @@ let vm = new Vue({
 				});
 		},
 	},
-});
+}));
 
 (function() {
 	let id = lotus.getUrlArgs().id;

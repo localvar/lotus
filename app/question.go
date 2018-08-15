@@ -12,10 +12,9 @@ import (
 )
 
 var (
-	errQuestionNotExist = errors.New("question does not exist")
-	errUserNotExist     = errors.New("user does not exist")
-	errPermissionDenied = errors.New("permission denied")
-	errContentTooShort  = errors.New("content too short")
+	errQuestionNotExist = errors.New("问题不存在")
+	errUserNotExist     = errors.New("用户不存在")
+	errPermissionDenied = errors.New("权限不足")
 )
 
 func onGetQuestionByID(r *http.Request, arg *rpc.IDArg) (interface{}, error) {
@@ -29,28 +28,33 @@ func onGetQuestionByID(r *http.Request, arg *rpc.IDArg) (interface{}, error) {
 		return nil, e
 	}
 
-	if u.Role != models.GeneralUser {
+	// admin & editor can see all questions
+	if u.Role == models.ContentEditor || u.Role == models.SystemAdmin {
 		return q, nil
 	}
 
-	if !q.DeletedAt.IsZero() {
-		return nil, errQuestionNotExist
-	}
-
+	// user can see all his/her questions
 	if q.Asker == u.ID {
 		return q, nil
 	}
 
+	// deleted question is invisible
+	if !q.DeletedAt.IsZero() {
+		return nil, errQuestionNotExist
+	}
+
+	// private & unreplied questions is invisible
 	if q.Private || q.Replier == 0 {
 		return nil, errPermissionDenied
 	}
 
+	// this question is visible
 	return q, nil
 }
 
 func onEditQuestion(r *http.Request, q *models.Question) (interface{}, error) {
-	if c := strings.TrimSpace(q.Content); len(c) < 20 || utf8.RuneCount([]byte(c)) < 10 {
-		return nil, errContentTooShort
+	if c := strings.TrimSpace(q.Content); utf8.RuneCount([]byte(c)) < 10 {
+		return nil, errors.New("问题太短了")
 	}
 
 	u, e := userFromCookie(r)
@@ -58,13 +62,25 @@ func onEditQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 		return nil, e
 	}
 
+	// blocked user is not allowed to ask a question
+	if u.Role == models.BlockedUser {
+		return nil, errPermissionDenied
+	}
+
 	if q.ID == 0 {
+		if lq, _ := models.GetUserLastQuestion(u.ID); lq != nil {
+			if time.Now().Sub(lq.AskedAt) < time.Hour {
+				return nil, errors.New("提问过于频繁，请稍后再试")
+			}
+		}
+
 		q.Asker = u.ID
 		q.AskedAt = time.Now()
 		q.Reply = ""
 		q.Replier = 0
 		q.RepliedAt = time.Time{}
 		q.DeletedAt = q.RepliedAt
+
 		return models.InsertQuestion(q)
 	}
 
@@ -76,23 +92,28 @@ func onEditQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 		return nil, errQuestionNotExist
 	}
 
+	// change question asker is not allowed
 	if q1.Asker != q.Asker {
 		return nil, errPermissionDenied
 	}
 
-	if q.Asker != u.ID {
-		if u.Role == models.GeneralUser {
-			q.Private = q1.Private
-		} else {
+	if q.Asker == u.ID {
+		// can not modify replied questions
+		if q.Replier != 0 {
 			return nil, errPermissionDenied
 		}
+	} else if u.Role == models.ContentEditor || u.Role == models.SystemAdmin {
+		// only editor & admin is allowed to modify the other's question
+		// but 'private' flag cannot be changed in this case
+		q.Private = q1.Private
+	} else {
+		return nil, errPermissionDenied
 	}
 
-	e = models.UpdateQuestion(q)
-	if e != nil {
+	if e = models.UpdateQuestion(q); e != nil {
 		return nil, e
 	}
-	return q, e
+	return q, nil
 }
 
 func onReplyQuestion(r *http.Request, q *models.Question) (interface{}, error) {
@@ -104,7 +125,7 @@ func onReplyQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 	if e != nil {
 		return nil, e
 	}
-	if u.Role == models.GeneralUser {
+	if u.Role != models.ContentEditor && u.Role != models.SystemAdmin {
 		return nil, errPermissionDenied
 	}
 
@@ -148,23 +169,25 @@ func questionRenderList(ctx *viewContext) error {
 }
 
 func questionRenderMine(ctx *viewContext) error {
-	id, e := userIDFromCookie(ctx.r)
+	_, e := userIDFromCookie(ctx.r)
 	if e != nil {
 		return e
 	}
 
-	ctx.data["userId"] = id
+	ctx.data["mode"] = "mine"
 	ctx.tmpl = "question/list.html"
 	return nil
 }
 
-func questionRenderView(ctx *viewContext) error {
-	u, e := userFromCookie(ctx.r)
-	if e != nil {
-		return e
-	}
+func questionRenderReplied(ctx *viewContext) error {
+	ctx.data["mode"] = "replied"
+	ctx.tmpl = "question/list.html"
+	return nil
+}
 
-	ctx.data["isGeneralUser"] = u.Role == models.GeneralUser
+func questionRenderFeatured(ctx *viewContext) error {
+	ctx.data["mode"] = "featured"
+	ctx.tmpl = "question/list.html"
 	return nil
 }
 
@@ -175,8 +198,12 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 func questionInit() error {
 	viewAddRoute("/question/list.html", questionRenderList, viewRequireOAuth, 0)
 	viewAddRoute("/question/mine.html", questionRenderMine, viewRequireOAuth, 0)
+	viewAddRoute("/question/replied.html", questionRenderReplied, viewRequireOAuth, 0)
+	viewAddRoute("/question/featured.html", questionRenderFeatured, viewRequireOAuth, 0)
+
 	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth, 0)
-	viewAddRoute("/question/view.html", questionRenderView, viewRequireOAuth, 0)
+	viewAddRoute("/question/reply.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.ContentEditor, models.SystemAdmin))
+
 	rpc.Add("get-question-by-id", onGetQuestionByID)
 	rpc.Add("edit-question", onEditQuestion)
 	rpc.Add("reply-question", onReplyQuestion)

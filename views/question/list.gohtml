@@ -1,62 +1,39 @@
 {[/* layout: basic */]}
 
-{[define "style"]}
-<style>
-	.clearfix:before,
-	.clearfix:after {
-		display: table;
-		content: "";
-	}
-	.clearfix:after {
-		clear: both
-	}
-	.question {
-		width: 100%;
-		height: 2.2em;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.reply {
-		width: 100%;
-		height: 2.2em;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-</style>
+{[define "appBar"]}
+    <div slot="right">
+        <mu-button icon @click="onShowFilterDialog"><mu-icon value="search"></mu-icon></mu-button>
+    </div>
 {[end]}
 
 {[define "body"]}
-<el-row>
-	<el-col>
-	{[if .userId]}<a href="list.html">所有问题</a>{[else]}<a href="mine.html">我的问题</a>{[end]}
-		<el-checkbox-button v-model="criteria.replied" @change="refresh">只看已回答问题</el-checkbox-button>
-		<el-checkbox-button v-model="criteria.urgent" @change="refresh">只看紧急问题</el-checkbox-button>
-		<el-checkbox-button v-model="criteria.featuredOnly" @change="refresh">只看精华</el-checkbox-button>
-		<a href="edit.html">我要提问</a>
-	</el-col>
-</el-row>
-<el-row>
-	<el-col>
-		<el-card v-for="q in questions" :key="q.id">
-		<div slot="header" class="clearfix">
-			<span>{{q.askerName}} 问</span>
-			<el-button style="float: right; padding: 3px 0" type="text">操作按钮</el-button>
-		</div>
-		<div>
-			<div class="question">{{q.content}}</div>
-			<div v-if="q.replier" class="reply">{{q.reply}}</div>
-		</div>
-		</el-card>
+<mu-list>
+    <mu-list-item avatar v-for="q in users" :key="q.id">
+        <mu-list-item-action>
+            <mu-checkbox v-model="user.selected"></mu-checkbox>
+        </mu-list-item-action>
+        <mu-list-item-content>
+            <mu-list-item-title>{{user.nickName}}</mu-list-item-title>
+            <mu-list-item-sub-title><mu-badge color="primary" :content="formatRole(user.role)"></mu-badge></mu-list-item-sub-title>
+        </mu-list-item-content>
+        <mu-list-item-action>
+            <mu-avatar><a :href="'/user/index.html?id='+user.id"><img :src="user.avatar"></a></mu-avatar>
+        </mu-list-item-action>
+    </mu-list-item>
+</mu-list>
 
-		<el-pagination
-			@current-change="onPageChange"
-			:current-page.sync="currentPage"
-			:page-size="pageSize"
-			layout="prev, pager, next, jumper"
-			:total="total">
-		</el-pagination>
-	</el-col>
-</el-row>
+<mu-flex justify-content="center">
+    <mu-pagination raised v-if="pagination.total > pagination.size" @change="onPageChange" :total="pagination.total" :current.sync="pagination.current" :page-size="pagination.size"></mu-pagination>
+</mu-flex>
+
+<mu-dialog :open.sync="filterDialog.visible" title="设置问题过滤条件">
+    <mu-text-field prefix="昵称" v-model="filterDialog.nickName" full-width></mu-text-field>
+    <mu-select label="角色" v-model="filterDialog.role" full-width>
+        <mu-option label="全部" :value="0"></mu-option>
+        <mu-option v-for="r in roles" :key="r.value" :label="r.name" :value="r.value"></mu-option>
+    </mu-select>
+    <mu-button slot="actions" flat color="primary" @click="onCloseFilterDialog">确定</mu-button>
+</mu-dialog>
 {[end]}
 
 {[define "script"]}
@@ -65,31 +42,51 @@ var vm = new Vue(lotus.buildVueConfig({
 	el: 'div#app',
 
 	data: {
-		pageSize: 20,
-		currentPage: 1,
-		criteria: {
-			{[if .userId]}userId: {[.userId]},{[end]}
+		filterDialog: {
+			asker: 0,
+			replier: 0,
+			tag: 0,
 			urgent: false,
-			featuredOnly: false,
-			replied: true,
-		},
-		total: 0,
-		questions:[],
+			featured: false,
+            visible: false,
+        },
+
+        pagination: {
+            total: 1,
+            current: 1,
+            size: 10,
+        },
+
+        questions: [],
 	},
 
 	methods: {
 		refresh() {
-			lotus.callApi('find-question', this.criteria)
-				.then(res => {
-					this.total = res.total;
-					this.questions = res.questions;
-				})
-				.catch(err => {
-					this.$notify({ type: 'error', message: err.message });
-				});
+			let args = {
+{[if eq .mode "mine"]}
+				mine: true,
+{[else if eq .mode "featured"]}
+				featured: true,
+{[else if eq .mode ""]}
+{[else]}
+
+{[end]}
+                pageSize: this.pagination.size,
+                pageNumber: this.pagination.current - 1,
+            };
+
+            lotus.callApi('find-question', args)
+                .then(res => {
+                    this.questions = res.questions;
+                    this.pagination.total = res.total;
+                    this.pagination.current = res.pageNumber + 1;
+                }).catch(err => {
+                    this.$alert(err.message);
+                });
 		},
 
-		onPageChange(val) {
+		onPageChange() {
+			this.refresh()
 		}
 	},
 }));

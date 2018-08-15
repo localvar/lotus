@@ -162,24 +162,36 @@ func GetQuestionByID(id int64, wantTags bool) (*Question, error) {
 	return &q, nil
 }
 
+func GetUserLastQuestion(uid int64) (*Question, error) {
+	const qs = "SELECT * FROM `question` WHERE `asker`=? ORDER BY `asked_at` DESC LIMIT 1;"
+	var q Question
+	if e := db.Get(&q, qs, uid); e == sql.ErrNoRows {
+		return nil, nil
+	} else if e != nil {
+		return nil, e
+	}
+	return &q, nil
+}
+
 type FindQuestionArg struct {
-	UserID        int64  `json:"userId"`
-	TagID         int64  `json:"tagId"`
-	Urgent        bool   `json:"urgent"`
-	PublicOnly    bool   `json:"publicOnly"`
-	FeaturedOnly  bool   `json:"featuredOnly"`
-	Replied       bool   `json:"replied"`
-	Deleted       bool   `json:"deleted"`
-	FeaturedFirst bool   `json:"featuredFirst"`
-	Ascending     bool   `json:"ascending"`
-	PageSize      uint64 `json:"pageSize"`
-	PageNumber    uint64 `json:"pageNumber"`
+	UserID     int64  `json:"user"`
+	TagID      int64  `json:"tag"`
+	AskerID    int64  `json:"asker"`
+	ReplierID  int64  `json:"replier"`
+	Urgent     bool   `json:"urgent"`
+	Featured   bool   `json:"featured"`
+	PublicOnly bool   `json:"publicOnly"`
+	Replied    bool   `json:"replied"`
+	Deleted    bool   `json:"deleted"`
+	Ascending  bool   `json:"ascending"`
+	PageSize   uint32 `json:"pageSize"`
+	PageNumber uint32 `json:"pageNumber"`
 }
 
 type FindQuestionResult struct {
-	Total      uint64     `json:"total"`
-	PageSize   uint64     `json:"pageSize"`
-	PageNumber uint64     `json:"pageNumber"`
+	Total      uint32     `json:"total"`
+	PageSize   uint32     `json:"pageSize"`
+	PageNumber uint32     `json:"pageNumber"`
 	Questions  []Question `json:"questions"`
 }
 
@@ -209,7 +221,7 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 		wheres = append(wheres, "q.`urgent`<>0")
 	}
 
-	if fqa.FeaturedOnly {
+	if fqa.Featured {
 		wheres = append(wheres, "q.`featured`<>0")
 	}
 
@@ -269,9 +281,11 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 		}
 	}
 
-	if fqa.FeaturedFirst && !fqa.FeaturedOnly {
-		orderby = "q.`featured` DESC," + orderby
-	}
+	/*
+		if fqa.FeaturedFirst && !fqa.FeaturedOnly {
+			orderby = "q.`featured` DESC," + orderby
+		}
+	*/
 
 	sb.WriteString(" ORDER BY ")
 	sb.WriteString(orderby)

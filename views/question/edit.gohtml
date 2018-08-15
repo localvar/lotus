@@ -1,7 +1,7 @@
 {[/* layout: basic */]}
 
 {[define "body"]}
-<mu-form :model="question">
+<mu-form ref="form" :model="question">
     <mu-form-item label="问题" prop="content" :rules="contentRules">
         <mu-text-field multi-line :rows="10" v-model="question.content" prop="content"></mu-text-field>
     </mu-form-item>
@@ -28,7 +28,7 @@ let vm = new Vue(lotus.buildVueConfig({
 
 	data: {
 		contentRules: [
-			{ validate: (val) => val.trim().length < 10, message: '问题不能短于10个字符。'},
+			{ validate: (val) => val.trim().length >= 10, message: '问题不能短于10个字符。'},
 		],
 		question: {
 			id: 0,
@@ -49,9 +49,13 @@ let vm = new Vue(lotus.buildVueConfig({
 		},
 
 		submit() {
-			lotus.callApi('edit-question', this.question)
+			this.$refs.form.validate()
 				.then(res => {
-					this.question = res;
+					return res && lotus.callApi('edit-question', this.question)
+				}).then(res => {
+					return res && this.$message.alert('提问成功，点击“确定”按钮返回问题列表。');
+				}).then(res => {
+					res && (location.href = '/question/mine.html');
 				}).catch(err => {
 				    this.$alert(err.message);
 				});

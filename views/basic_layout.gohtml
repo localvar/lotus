@@ -16,7 +16,7 @@
 
 <body>
     <div id="app">
-        <mu-appbar color="primary">
+        <mu-appbar color="primary" style="position:fixed;width:100%;">
             <mu-button icon slot="left" @click="showDrawer = true">
                 <mu-icon value="menu"></mu-icon>
             </mu-button>
@@ -25,18 +25,66 @@
 
         <mu-drawer :open.sync="showDrawer" :docked="false">
             <mu-list>
-                <mu-list-item button @click="onUserManagement">
+                <mu-list-item button @click="navigateTo('/question/ask.html')">
+                    <mu-list-item-action>
+                        <mu-icon value="live_help" color="primary"></mu-icon>
+                    </mu-list-item-action>
+                    <mu-list-item-title>我要提问</mu-list-item-title>
+                </mu-list-item>
+{[if IsManager .user.Role]}
+                <mu-list-item button @click="navigateTo('/question/reply.html')">
+                    <mu-list-item-action>
+                        <mu-icon value="reply" color="primary"></mu-icon>
+                    </mu-list-item-action>
+                    <mu-list-item-title>回复问题</mu-list-item-title>
+                </mu-list-item>
+{[end]}
+                <mu-divider></mu-divider>
+                <mu-list-item button @click="navigateTo('/question/mine.html')">
+                    <mu-list-item-action>
+                        <mu-icon value="help" color="primary"></mu-icon>
+                    </mu-list-item-action>
+                    <mu-list-item-title>我的问题</mu-list-item-title>
+                </mu-list-item>
+                <mu-list-item button @click="navigateTo('/question/replied.html')">
+                    <mu-list-item-action>
+                        <mu-icon value="check_circle" color="primary"></mu-icon>
+                    </mu-list-item-action>
+                    <mu-list-item-title>已回复问题</mu-list-item-title>
+                </mu-list-item>
+                <mu-list-item button @click="navigateTo('/question/featured.html')">
+                    <mu-list-item-action>
+                        <mu-icon value="grade" color="primary"></mu-icon>
+                    </mu-list-item-action>
+                    <mu-list-item-title>精华问题</mu-list-item-title>
+                </mu-list-item>
+{[if IsAdmin .user.Role]}
+                <mu-divider></mu-divider>
+                <mu-list-item button @click="navigateTo('/user/list.html')">
+                    <mu-list-item-action>
+                        <mu-icon value="people" color="primary"></mu-icon>
+                    </mu-list-item-action>
                     <mu-list-item-title>用户管理</mu-list-item-title>
                 </mu-list-item>
-                <mu-list-item button @click="onTagManagement">
+                <mu-list-item avatar button @click="navigateTo('/tag.html')">
+                    <mu-list-item-action>
+                        <mu-icon value="bookmark" color="primary"></mu-icon>
+                    </mu-list-item-action>
                     <mu-list-item-title>标签管理</mu-list-item-title>
                 </mu-list-item>
-                <mu-list-item  @click="showDrawer = false" button>
-                    <mu-list-item-title>关闭</mu-list-item-title>
+{[end]}
+                <mu-divider></mu-divider>
+                <mu-list-item button @click="navigateTo('/about.html')">
+                    <mu-list-item-action>
+                        <mu-icon value="home" color="primary"></mu-icon>
+                    </mu-list-item-action>
+                    <mu-list-item-title>关于</mu-list-item-title>
                 </mu-list-item>
             </mu-list>
         </mu-drawer>
+        <div style="padding-top:56px;">
         {[block "body" .]}{[end]}
+        </div>
     </div>
     <script src="//cdn.bootcss.com/vue/2.5.16/vue{[if not .debug]}.min{[end]}.js"></script>
     <script src="//cdn.bootcss.com/axios/0.18.0/axios{[if not .debug]}.min{[end]}.js"></script>
@@ -58,12 +106,7 @@
     <script>
     lotus.buildVueConfig = cfg => {
         cfg.data.showDrawer = false;
-        cfg.methods.onUserManagement = () => {
-            location.href = "/user/list.html";
-        };
-        cfg.methods.onTagManagement = () => {
-            location.href = "/tag.html";
-        };
+        cfg.methods.navigateTo = url => location.href = url;
         return cfg;
     };
     </script>

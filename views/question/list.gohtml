@@ -16,7 +16,7 @@
         <mu-col span="4" style="text-align:right">
             <mu-icon v-if="q.urgent" value="error" color="#f44336"></mu-icon>
             <mu-icon v-if="q.private" value="lock" color="#607d8b"></mu-icon>
-            <mu-icon value="grade" :color="q.featured ? 'orange' : 'grey'" @click="q.featured = !q.featured"></mu-icon>
+            <mu-icon value="grade" :color="q.featured ? 'orange' : 'grey'" @click="onToggleFeatured(q)"></mu-icon>
         </mu-col>
     </mu-row>
     <mu-row>
@@ -107,6 +107,15 @@ var vm = new Vue(lotus.buildVueConfig({
         onCloseFilterDialog() {
             this.filterDialog.visible = false;
         },
+
+	onToggleFeatured(q) {
+{[if IsManager .user.Role]}
+            let featured = !q.featured;
+            lotus.callApi('set-question-featured', {id: q.id, featured: featured})
+	        .then(_ => q.featured = featured)
+                .catch(err => this.$alert(err.message));
+{[end]}
+	},
     },
 }));
 

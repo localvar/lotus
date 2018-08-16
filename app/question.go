@@ -212,6 +212,17 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 	return models.FindQuestion(arg)
 }
 
+func onSetQuestionFeatured(r *http.Request, arg *models.Question) error {
+	u, e := userFromCookie(r)
+	if e != nil {
+		return e
+	}
+	if !models.IsManager(u.Role) {
+		return errPermissionDenied
+	}
+	return models.SetQuestionFeatured(arg.ID, arg.Featured)
+}
+
 func questionInit() error {
 	viewAddRoute("/question/list.html", questionRenderList, viewRequireOAuth, 0)
 	viewAddRoute("/question/mine.html", questionRenderMine, viewRequireOAuth, 0)
@@ -222,6 +233,7 @@ func questionInit() error {
 	viewAddRoute("/question/reply.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.ContentEditor, models.SystemAdmin))
 
 	rpc.Add("get-question-by-id", onGetQuestionByID)
+	rpc.Add("set-question-featured", onSetQuestionFeatured)
 	rpc.Add("edit-question", onEditQuestion)
 	rpc.Add("reply-question", onReplyQuestion)
 	rpc.Add("remove-question", onRemoveQuestion)

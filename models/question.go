@@ -141,6 +141,12 @@ func ReplyQuestion(q *Question) error {
 	return e
 }
 
+func SetQuestionFeatured(id int64, featured bool) error {
+	const qs = "UPDATE `question` SET `featured`=? WHERE `id`=?;"
+	_, e := db.Exec(qs, featured, id)
+	return e
+}
+
 const sqlSelectQuestion = "SELECT q.*," +
 	" IFNULL(a.`nick_name`,'匿名用户') AS `asker_name`," +
 	" IFNULL(a.`avatar`,'') AS `asker_avatar`," +
@@ -294,6 +300,10 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 
 	if fqa.Featured == "first" {
 		orderby = "q.`featured` DESC," + orderby
+	}
+
+	if fqa.Urgent == "first" {
+		orderby = "q.`urgent` DESC," + orderby
 	}
 
 	sb.WriteString(" ORDER BY ")

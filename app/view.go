@@ -80,15 +80,13 @@ func viewInit(debug bool) error {
 			"IsEditor": func(role uint8) bool {
 				return role == models.ContentEditor
 			},
-			"IsManager": func(role uint8) bool {
-				return role == models.ContentEditor || role == models.SystemAdmin
-			},
 			"IsGeneralUser": func(role uint8) bool {
 				return role == models.GeneralUser
 			},
 			"IsBlockedUser": func(role uint8) bool {
 				return role == models.BlockedUser
 			},
+			"IsManager": models.IsManager,
 		},
 	})
 

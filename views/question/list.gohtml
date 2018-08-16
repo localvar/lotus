@@ -8,10 +8,7 @@
 
 {[define "body"]}
 <mu-list>
-    <mu-list-item avatar v-for="q in users" :key="q.id">
-        <mu-list-item-action>
-            <mu-checkbox v-model="user.selected"></mu-checkbox>
-        </mu-list-item-action>
+    <mu-list-item avatar v-for="q in questions" :key="q.id">
         <mu-list-item-content>
             <mu-list-item-title>{{user.nickName}}</mu-list-item-title>
             <mu-list-item-sub-title><mu-badge color="primary" :content="formatRole(user.role)"></mu-badge></mu-list-item-sub-title>
@@ -27,10 +24,9 @@
 </mu-flex>
 
 <mu-dialog :open.sync="filterDialog.visible" title="设置问题过滤条件">
-    <mu-text-field prefix="昵称" v-model="filterDialog.nickName" full-width></mu-text-field>
-    <mu-select label="角色" v-model="filterDialog.role" full-width>
+    <mu-select label="标签" v-model="filterDialog.tag" full-width>
         <mu-option label="全部" :value="0"></mu-option>
-        <mu-option v-for="r in roles" :key="r.value" :label="r.name" :value="r.value"></mu-option>
+        <mu-option v-for="t in tags" :key="t.id" :label="t.name" :value="t.id"></mu-option>
     </mu-select>
     <mu-button slot="actions" flat color="primary" @click="onCloseFilterDialog">确定</mu-button>
 </mu-dialog>
@@ -43,8 +39,6 @@ var vm = new Vue(lotus.buildVueConfig({
 
 	data: {
 		filterDialog: {
-			asker: 0,
-			replier: 0,
 			tag: 0,
 			urgent: false,
 			featured: false,
@@ -57,20 +51,13 @@ var vm = new Vue(lotus.buildVueConfig({
             size: 10,
         },
 
+        tags: [],
         questions: [],
 	},
 
 	methods: {
 		refresh() {
 			let args = {
-{[if eq .mode "mine"]}
-				mine: true,
-{[else if eq .mode "featured"]}
-				featured: true,
-{[else if eq .mode ""]}
-{[else]}
-
-{[end]}
                 pageSize: this.pagination.size,
                 pageNumber: this.pagination.current - 1,
             };

@@ -174,14 +174,13 @@ func GetUserLastQuestion(uid int64) (*Question, error) {
 }
 
 type FindQuestionArg struct {
-	UserID     int64  `json:"user"`
-	TagID      int64  `json:"tag"`
-	AskerID    int64  `json:"asker"`
-	ReplierID  int64  `json:"replier"`
-	Urgent     bool   `json:"urgent"`
-	Featured   bool   `json:"featured"`
-	PublicOnly bool   `json:"publicOnly"`
-	Replied    bool   `json:"replied"`
+	Asker      int64  `json:"asker"`
+	Replier    int64  `json:"replier"`
+	Replied    string `json:"replied"`
+	Urgent     string `json:"urgent"`
+	Featured   string `json:"featured"`
+	Private    string `json:"private"`
+	Tag        int64  `json:"tag"`
 	Deleted    bool   `json:"deleted"`
 	Ascending  bool   `json:"ascending"`
 	PageSize   uint32 `json:"pageSize"`
@@ -212,39 +211,47 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	}
 	defer tx.Rollback()
 
-	if fqa.UserID > 0 {
+	if fqa.Asker > 0 {
 		wheres = append(wheres, "q.`asker`=?")
-		args = append(args, fqa.UserID)
+		args = append(args, fqa.Asker)
 	}
 
-	if fqa.Urgent {
-		wheres = append(wheres, "q.`urgent`<>0")
-	}
-
-	if fqa.Featured {
-		wheres = append(wheres, "q.`featured`<>0")
-	}
-
-	if fqa.Replied {
+	if fqa.Replier > 0 {
+		wheres = append(wheres, "q.`replier`=?")
+		args = append(args, fqa.Replier)
+	} else if fqa.Replied == "yes" {
 		wheres = append(wheres, "q.`replier`>0")
-	} else {
+	} else if fqa.Replied == "no" {
 		wheres = append(wheres, "q.`replier`=0")
 	}
 
-	if fqa.PublicOnly {
+	if fqa.Urgent == "yes" {
+		wheres = append(wheres, "q.`urgent`<>0")
+	} else if fqa.Urgent == "no" {
+		wheres = append(wheres, "q.`urgent`=0")
+	}
+
+	if fqa.Featured == "yes" {
+		wheres = append(wheres, "q.`featured`<>0")
+	} else if fqa.Featured == "no" {
+		wheres = append(wheres, "q.`featured`=0")
+	}
+
+	if fqa.Private == "yes" {
+		wheres = append(wheres, "q.`private`<>0")
+	} else if fqa.Private == "no" {
 		wheres = append(wheres, "q.`private`=0")
 	}
 
 	if fqa.Deleted {
-		wheres = append(wheres, "q.`deleted_at`<>?")
+		wheres = append(wheres, "q.`deleted_at`>'2000-01-01'?")
 	} else {
-		wheres = append(wheres, "q.`deleted_at`=?")
+		wheres = append(wheres, "q.`deleted_at`<'2000-01-01'")
 	}
-	args = append(args, time.Time{})
 
-	if fqa.TagID > 0 {
+	if fqa.Tag > 0 {
 		wheres = append(wheres, "q.`id` IN (SELECT `question_id` FROM `question_tag` WHERE `tag_id`=?)")
-		args = append(args, fqa.TagID)
+		args = append(args, fqa.Tag)
 	}
 
 	sb.WriteString("SELECT COUNT(1) FROM `question` AS q")
@@ -267,7 +274,7 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	sb.WriteString(where)
 
 	var orderby string
-	if fqa.Replied {
+	if fqa.Replier > 0 || fqa.Replied == "yes" {
 		if fqa.Ascending {
 			orderby = "q.`replied_at`"
 		} else {
@@ -281,11 +288,9 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 		}
 	}
 
-	/*
-		if fqa.FeaturedFirst && !fqa.FeaturedOnly {
-			orderby = "q.`featured` DESC," + orderby
-		}
-	*/
+	if fqa.Featured == "first" {
+		orderby = "q.`featured` DESC," + orderby
+	}
 
 	sb.WriteString(" ORDER BY ")
 	sb.WriteString(orderby)

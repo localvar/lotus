@@ -13,6 +13,10 @@ const (
 	SystemAdmin   = 10
 )
 
+func IsManager(role uint8) bool {
+	return role == ContentEditor || role == SystemAdmin
+}
+
 type User struct {
 	ID        int64     `db:"id" json:"id" dbx:"<-"`
 	WxOpenID  string    `db:"wx_open_id" json:"-"`

@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -29,7 +30,7 @@ func onGetQuestionByID(r *http.Request, arg *rpc.IDArg) (interface{}, error) {
 	}
 
 	// admin & editor can see all questions
-	if u.Role == models.ContentEditor || u.Role == models.SystemAdmin {
+	if models.IsManager(u.Role) {
 		return q, nil
 	}
 
@@ -97,17 +98,18 @@ func onEditQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 		return nil, errPermissionDenied
 	}
 
-	if q.Asker == u.ID {
-		// can not modify replied questions
-		if q.Replier != 0 {
-			return nil, errPermissionDenied
-		}
-	} else if u.Role == models.ContentEditor || u.Role == models.SystemAdmin {
+	if q.Replier != 0 && !models.IsManager(u.Role) {
+		return nil, errors.New("不允许修改已经得到回复的问题")
+	}
+
+	if q.Asker != u.ID {
 		// only editor & admin is allowed to modify the other's question
 		// but 'private' flag cannot be changed in this case
-		q.Private = q1.Private
-	} else {
-		return nil, errPermissionDenied
+		if models.IsManager(u.Role) {
+			q.Private = q1.Private
+		} else {
+			return nil, errPermissionDenied
+		}
 	}
 
 	if e = models.UpdateQuestion(q); e != nil {
@@ -125,7 +127,7 @@ func onReplyQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 	if e != nil {
 		return nil, e
 	}
-	if u.Role != models.ContentEditor && u.Role != models.SystemAdmin {
+	if !models.IsManager(u.Role) {
 		return nil, errPermissionDenied
 	}
 
@@ -153,11 +155,7 @@ func onRemoveQuestion(r *http.Request, arg *IDArg) error {
 		return e
 	}
 
-	if u.ID != q.Asker {
-		if u.Role == models.GeneralUser {
-			return errPermissionDenied
-		}
-	} else if q.Replier > 0 {
+	if u.ID != q.Asker && !models.IsManager(u.Role) {
 		return errPermissionDenied
 	}
 
@@ -192,6 +190,25 @@ func questionRenderFeatured(ctx *viewContext) error {
 }
 
 func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, error) {
+	refer, e := url.Parse(r.Referer())
+	if e != nil {
+		return nil, e
+	}
+	u, e := userFromCookie(r)
+	if e != nil {
+		return nil, e
+	}
+
+	switch strings.ToLower(refer.Path) {
+	case "/question/mine.html":
+		arg.Asker = u.ID
+	case "/question/featured.html":
+		arg.Featured = "yes"
+		if u.ID != arg.Asker {
+			arg.Private = "no"
+		}
+	}
+
 	return models.FindQuestion(arg)
 }
 

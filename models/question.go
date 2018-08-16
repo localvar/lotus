@@ -15,20 +15,22 @@ type Tag struct {
 }
 
 type Question struct {
-	ID          int64     `db:"id" json:"id" dbx:"<-"`
-	Urgent      bool      `db:"urgent" json:"urgent"`
-	Private     bool      `db:"private" json:"private"`
-	Featured    bool      `db:"featured" json:"featured"`
-	Asker       int64     `db:"asker" json:"asker"`
-	AskerName   string    `db:"asker_name" json:"askerName" dbx:"<-"`
-	AskedAt     time.Time `db:"asked_at" json:"askedAt"`
-	Content     string    `db:"content" json:"content"`
-	Reply       string    `db:"reply" json:"reply"`
-	Replier     int64     `db:"replier" json:"replier"`
-	ReplierName string    `db:"replier_name" json:"replierName" dbx:"<-"`
-	RepliedAt   time.Time `db:"replied_at" json:"repliedAt"`
-	DeletedAt   time.Time `db:"deleted_at" json:"-"`
-	Tags        []Tag     `db:"-" json:"tags,omitempty"`
+	ID            int64     `db:"id" json:"id" dbx:"<-"`
+	Urgent        bool      `db:"urgent" json:"urgent"`
+	Private       bool      `db:"private" json:"private"`
+	Featured      bool      `db:"featured" json:"featured"`
+	Asker         int64     `db:"asker" json:"asker"`
+	AskerName     string    `db:"asker_name" json:"askerName" dbx:"<-"`
+	AskerAvatar   string    `db:"asker_avatar" json:"askerAvatar" dbx:"<-"`
+	AskedAt       time.Time `db:"asked_at" json:"askedAt"`
+	Content       string    `db:"content" json:"content"`
+	Reply         string    `db:"reply" json:"reply"`
+	Replier       int64     `db:"replier" json:"replier"`
+	ReplierName   string    `db:"replier_name" json:"replierName" dbx:"<-"`
+	ReplierAvatar string    `db:"replier_avatar" json:"replierAvatar" dbx:"<-"`
+	RepliedAt     time.Time `db:"replied_at" json:"repliedAt"`
+	DeletedAt     time.Time `db:"deleted_at" json:"-"`
+	Tags          []Tag     `db:"-" json:"tags,omitempty"`
 }
 
 type QuestionTag struct {
@@ -141,7 +143,9 @@ func ReplyQuestion(q *Question) error {
 
 const sqlSelectQuestion = "SELECT q.*," +
 	" IFNULL(a.`nick_name`,'匿名用户') AS `asker_name`," +
-	" IFNULL(r.`nick_name`,'') AS `replier_name`" +
+	" IFNULL(a.`avatar`,'') AS `asker_avatar`," +
+	" IFNULL(r.`nick_name`,'') AS `replier_name`," +
+	" IFNULL(r.`avatar`,'') AS `replier_avatar`" +
 	" FROM `question` AS q" +
 	" LEFT JOIN `user` AS a ON q.`asker`=a.`id`" +
 	" LEFT JOIN `user` AS r ON q.`replier`=r.`id`"

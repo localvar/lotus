@@ -1,0 +1,46 @@
+.question-bubble {
+	padding: 5px;
+	position: relative;
+	background: #b0bec5;
+	border-radius: .4em;
+	margin-bottom: 3px;
+}
+
+.question-bubble:after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 12%;
+	width: 0;
+	height: 0;
+	border: 10px solid transparent;
+	border-bottom-color: #b0bec5;
+	border-top: 0;
+	border-left: 0;
+	margin-left: -10px;
+	margin-top: -10px;
+}
+
+.reply-bubble {
+	padding: 5px;
+	position: relative;
+	background: #ffcc80;
+	border-radius: .4em;
+	margin-top: 3px;
+	margin-bottom: 10px;
+}
+
+.reply-bubble:after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	right: 10%;
+	width: 0;
+	height: 0;
+	border: 10px solid transparent;
+	border-top-color: #ffcc80;
+	border-bottom: 0;
+	border-right: 0;
+	margin-left: -10px;
+	margin-bottom: -10px;
+}

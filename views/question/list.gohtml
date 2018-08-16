@@ -1,5 +1,7 @@
 {[/* layout: basic */]}
 
+{[define "title"]}问题列表{[end]}
+
 {[define "appBar"]}
     <div slot="right">
         <mu-button icon @click="onShowFilterDialog"><mu-icon value="search"></mu-icon></mu-button>
@@ -7,17 +9,39 @@
 {[end]}
 
 {[define "body"]}
-<mu-list>
-    <mu-list-item avatar v-for="q in questions" :key="q.id">
-        <mu-list-item-content>
-            <mu-list-item-title>{{user.nickName}}</mu-list-item-title>
-            <mu-list-item-sub-title><mu-badge color="primary" :content="formatRole(user.role)"></mu-badge></mu-list-item-sub-title>
-        </mu-list-item-content>
-        <mu-list-item-action>
-            <mu-avatar><a :href="'/user/index.html?id='+user.id"><img :src="user.avatar"></a></mu-avatar>
-        </mu-list-item-action>
-    </mu-list-item>
-</mu-list>
+<mu-paper v-for="q in questions" :key="q.id" :z-depth="5" style="padding: 5px; margin: 5px;">
+    <mu-row>
+        <mu-col span="1"><mu-avatar :size="24"><a :href="'/user/index.html?id='+q.asker"><img :src="q.askerAvatar"></a></mu-avatar></mu-col>
+        <mu-col span="7" align-self="center"><a :href="'/question/list.html?asker='+q.asker">{{q.askerName}}</a></mu-col>
+        <mu-col span="4" style="text-align:right">
+            <mu-icon v-if="q.urgent" value="error" color="#f44336"></mu-icon>
+            <mu-icon v-if="q.private" value="lock" color="#607d8b"></mu-icon>
+            <mu-icon value="grade" :color="q.featured ? 'orange' : 'grey'" @click="q.featured = !q.featured"></mu-icon>
+        </mu-col>
+    </mu-row>
+    <mu-row>
+        <mu-col span="10"><div class="question-bubble">{{q.content}}</div></mu-col>
+        <mu-col span="2" align-self="center" style="text-align:center;font-size:9px;">{{q.askedAt.substring(0,16).replace('T', ' ')}}</mu-col>
+    </mu-row>
+    <template v-if="q.replier>0">
+        <mu-row>
+            <mu-col span="2" align-self="center" style="text-align:center;font-size:9px;">{{q.repliedAt.substring(0,16).replace('T', ' ')}}</mu-col>
+            <mu-col span="10"><div class="reply-bubble">{{q.reply}}</div></mu-col></mu-row>
+        </mu-row>
+        <mu-row style="text-align:right">
+            <mu-col offset="4" span="7" align-self="center"><a :href="'/question/list.html?replier='+q.replier">{{q.replierName}}</a></mu-col>
+            <mu-col span="1"><mu-avatar :size="24"><a :href="'/user/index.html?id='+q.replier"><img :src="q.replierAvatar"></a></mu-avatar></mu-col>
+        </mu-row>
+    </template>
+    <mu-divider></mu-divider>
+    <mu-row>
+        <mu-button small flat>删除</mu-button>
+        <mu-button small flat>修改</mu-button>
+        <mu-button small flat>回答</mu-button>
+        <mu-button small flat>标签</mu-button>
+        <mu-button small flat>加精</mu-button>
+    </mu-row>
+</mu-paper>
 
 <mu-flex justify-content="center">
     <mu-pagination raised v-if="pagination.total > pagination.size" @change="onPageChange" :total="pagination.total" :current.sync="pagination.current" :page-size="pagination.size"></mu-pagination>
@@ -35,13 +59,13 @@
 {[define "script"]}
 <script>
 var vm = new Vue(lotus.buildVueConfig({
-	el: 'div#app',
+    el: 'div#app',
 
-	data: {
-		filterDialog: {
-			tag: 0,
-			urgent: false,
-			featured: false,
+    data: {
+        filterDialog: {
+            tag: 0,
+            urgent: false,
+            featured: false,
             visible: false,
         },
 
@@ -53,11 +77,11 @@ var vm = new Vue(lotus.buildVueConfig({
 
         tags: [],
         questions: [],
-	},
+    },
 
-	methods: {
-		refresh() {
-			let args = {
+    methods: {
+        refresh() {
+            let args = {
                 pageSize: this.pagination.size,
                 pageNumber: this.pagination.current - 1,
             };
@@ -70,12 +94,20 @@ var vm = new Vue(lotus.buildVueConfig({
                 }).catch(err => {
                     this.$alert(err.message);
                 });
-		},
+        },
 
-		onPageChange() {
-			this.refresh()
-		}
-	},
+        onPageChange() {
+            this.refresh()
+        },
+
+        onShowFilterDialog() {
+            this.filterDialog.visible = true;
+        },
+
+        onCloseFilterDialog() {
+            this.filterDialog.visible = false;
+        },
+    },
 }));
 
 vm.refresh();

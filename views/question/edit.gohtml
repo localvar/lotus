@@ -13,8 +13,8 @@
     </mu-form-item>
 
     <mu-form-item>
-	<mu-switch v-model="question.urgent" label="我很着急，恳请尽快回复"></mu-switch>
-	<mu-switch v-model="question.private" label="涉及隐私，请勿公开展示"></mu-switch>
+        <mu-switch v-model="question.urgent" label="我很着急，恳请尽快回复"></mu-switch>
+        <mu-switch v-model="question.private" label="涉及隐私，请勿公开展示"></mu-switch>
     </mu-form-item>
 </mu-form>
 {[end]}
@@ -23,48 +23,40 @@
 {[define "script"]}
 <script>
 let vm = new Vue(lotus.buildVueConfig({
-	el: 'div#app',
+    el: 'div#app',
 
-	data: {
-		contentRules: [
-			{ validate: (val) => val.trim().length >= 10, message: '问题不能短于10个字符。'},
-		],
-		question: {
-			id: 0,
-			urgent: false,
-			private: false,
-			content: '',
-		},
-	},
+    data: {
+        contentRules: [
+            { validate: (val) => val.trim().length >= 10, message: '问题不能短于10个字符。'},
+        ],
+        question: {
+            id: 0,
+            urgent: false,
+            private: false,
+            content: '',
+        },
+    },
 
-	methods: {
-		init(id) {
-			lotus.callApi('get-question-by-id', {id: id})
-				.then(res => {
-					this.question = res;
-				}).catch(err => {
-				    lotus.alert(err.message);
-				});
-		},
+    methods: {
+        init(id) {
+            lotus.callApi('get-question-by-id', {id: id})
+                .then(res => this.question = res)
+                .catch(err => lotus.alert(err.message));
+        },
 
-		onSubmit() {
-			this.$refs.form.validate()
-				.then(res => {
-					return res && lotus.callApi('edit-question', this.question)
-				}).then(res => {
-					return res && this.$message.alert('提交成功，点击“确定”按钮返回问题列表。');
-				}).then(res => {
-					res && (location.href = '/question/mine.html');
-				}).catch(err => {
-				    this.$alert(err.message);
-				});
-		},
-	},
+        onSubmit() {
+            this.$refs.form.validate()
+                .then(res => res && lotus.callApi('edit-question', this.question))
+                .then(res => res && this.$message.alert('提交成功，点击“确定”按钮返回问题列表。'))
+                .then(res => res && (location.href = '/question/mine.html'))
+                .catch(err => this.$alert(err.message));
+        },
+    },
 }));
 
 (function() {
-	let id = lotus.getUrlArgs().id;
-	id && vm.init(id);
+    let id = lotus.getUrlArgs().id;
+    id && vm.init(id);
 })();
 </script>
 {[end]}

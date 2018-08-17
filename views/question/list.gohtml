@@ -55,7 +55,7 @@
           <mu-list-item-content>
             <mu-list-item-title>全部</mu-list-item-title>
           </mu-list-item-content>
-	</mu-option>
+        </mu-option>
         <mu-option v-for="t in tags" :key="t.id" :value="t.id" :label="t.name">
           <mu-list-item-action avatar>
             <mu-avatar :size="20" :color="t.color"></mu-avatar>
@@ -93,11 +93,11 @@ var vm = new Vue(lotus.buildVueConfig({
     },
 
     methods: {
-	init() {
+        init() {
             lotus.callApi('list-tags')
-		.then(res => this.tags = res)
-		.catch(err => console.log(err.message));
-	},
+                .then(res => this.tags = res)
+                .catch(err => console.log(err.message));
+        },
 
         refresh() {
             let args = {
@@ -127,38 +127,38 @@ var vm = new Vue(lotus.buildVueConfig({
             this.filterDialog.visible = false;
         },
 
-	onToggleUrgent(q) {
+        onToggleUrgent(q) {
             if(q.replier > 0{[if IsGeneralUser .user.Role]} || q.asker !== {[.user.ID]}{[end]}) {
                 return;
             }
 
             let urgent = !q.urgent;
             lotus.callApi('set-question-flag', {id: q.id, flag: 'urgent', value: urgent})
-	        .then(_ => q.urgent = urgent)
+                .then(_ => q.urgent = urgent)
                 .catch(err => this.$alert(err.message));
-	},
+        },
 
-	onTogglePrivate(q) {
+        onTogglePrivate(q) {
             if(q.asker !== {[.user.ID]}) {
                 return;
             }
             let private = !q.private;
             lotus.callApi('set-question-flag', {id: q.id, flag: 'private', value: private})
-	        .then(_ => q.private = private)
+                .then(_ => q.private = private)
                 .catch(err => this.$alert(err.message));
-	},
+        },
 
-	onToggleFeatured(q) {
+        onToggleFeatured(q) {
 {[if IsManager .user.Role]}
             if(!q.replier) {
                 return;
             }
             let featured = !q.featured;
             lotus.callApi('set-question-flag', {id: q.id, flag: 'featured', value: featured})
-	        .then(_ => q.featured = featured)
+                .then(_ => q.featured = featured)
                 .catch(err => this.$alert(err.message));
 {[end]}
-	},
+        },
     },
 }));
 

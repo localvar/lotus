@@ -3,26 +3,26 @@
 {[define "style"]}
 <style>
 div#app {
-	max-width: 100%;
-	margin: auto;
-	padding-top: 6.4em;
+    max-width: 100%;
+    margin: auto;
+    padding-top: 6.4em;
 }
 
 div#message {
-	max-width: 100%;
-	padding-top: 3.4em;
-} 
+    max-width: 100%;
+    padding-top: 3.4em;
+}
 
 div#message p {
-	text-align: center;
-	color: #313536;
-	font-size: 1.8em;
-	font-family: "PingFangSC-Regular";
+    text-align: center;
+    color: #313536;
+    font-size: 1.8em;
+    font-family: "PingFangSC-Regular";
 }
 
 div#goback {
-	max-width: 65%;
-	margin: 4.0em auto;
+    max-width: 65%;
+    margin: 4.0em auto;
 }
 </style>
 {[end]}
@@ -30,20 +30,20 @@ div#goback {
 {[define "body"]}
 <div id='message'><p>{[.errmsg]}</p></div>
 <div id='goback' v-if='hasHistory'>
-	<button type='button' @click='goback'>返回</button>
+    <button type='button' @click='goback'>返回</button>
 </div>
 {[end]}
 
 {[define "script"]}
 <script>
 var vm = new Vue({
-	el: '#app',
-	data: {
-		hasHistory: window.history.length > 1,
-	},
-	methods: {
-		goback: function() { window.history.back(); },
-	},
+    el: '#app',
+    data: {
+        hasHistory: window.history.length > 1,
+    },
+    methods: {
+        goback: function() { window.history.back(); },
+    },
 })
 </script>
 {[end]}

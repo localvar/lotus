@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	errInvalidArgument  = errors.New("参数无效")
 	errQuestionNotExist = errors.New("问题不存在")
 	errUserNotExist     = errors.New("用户不存在")
 	errPermissionDenied = errors.New("权限不足")
@@ -119,10 +120,6 @@ func onEditQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 }
 
 func onReplyQuestion(r *http.Request, q *models.Question) (interface{}, error) {
-	if q.ID == 0 {
-		return nil, errQuestionNotExist
-	}
-
 	u, e := userFromCookie(r)
 	if e != nil {
 		return nil, e
@@ -212,15 +209,51 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 	return models.FindQuestion(arg)
 }
 
-func onSetQuestionFeatured(r *http.Request, arg *models.Question) error {
+type setQuestionFlagArg struct {
+	ID    int64  `json:"id"`
+	Flag  string `json:"flag"`
+	Value bool   `json:"value"`
+}
+
+func onSetQuestionFlag(r *http.Request, arg *setQuestionFlagArg) error {
 	u, e := userFromCookie(r)
 	if e != nil {
 		return e
 	}
-	if !models.IsManager(u.Role) {
+	if u.Role == models.BlockedUser {
 		return errPermissionDenied
 	}
-	return models.SetQuestionFeatured(arg.ID, arg.Featured)
+
+	q, e := models.GetQuestionByID(arg.ID, false)
+	if e != nil {
+		return e
+	}
+	if q == nil {
+		return errQuestionNotExist
+	}
+
+	if arg.Flag == "featured" {
+		if !models.IsManager(u.Role) {
+			return errPermissionDenied
+		}
+		if q.Replier == 0 {
+			return errors.New(`不能给未回复的问题添加"精华"标志`)
+		}
+	} else if arg.Flag == "urgent" {
+		if q.Replier > 0 {
+			return errors.New(`不能给已回复的问题添加"加急"标志`)
+		} else if !models.IsManager(u.Role) && q.Asker != u.ID {
+			return errPermissionDenied
+		}
+	} else if arg.Flag == "private" {
+		if  q.Asker != u.ID {
+			return errPermissionDenied
+		}
+	} else {
+		return errInvalidArgument
+	}
+
+	return models.SetQuestionFlag(arg.ID, arg.Flag, arg.Value)
 }
 
 func questionInit() error {
@@ -233,7 +266,7 @@ func questionInit() error {
 	viewAddRoute("/question/reply.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.ContentEditor, models.SystemAdmin))
 
 	rpc.Add("get-question-by-id", onGetQuestionByID)
-	rpc.Add("set-question-featured", onSetQuestionFeatured)
+	rpc.Add("set-question-flag", onSetQuestionFlag)
 	rpc.Add("edit-question", onEditQuestion)
 	rpc.Add("reply-question", onReplyQuestion)
 	rpc.Add("remove-question", onRemoveQuestion)

@@ -14,8 +14,8 @@
         <mu-col span="1"><mu-avatar :size="24"><a :href="'/user/index.html?id='+q.asker"><img :src="q.askerAvatar"></a></mu-avatar></mu-col>
         <mu-col span="7" align-self="center"><a :href="'/question/list.html?asker='+q.asker">{{q.askerName}}</a></mu-col>
         <mu-col span="4" style="text-align:right">
-            <mu-icon v-if="q.urgent" value="error" color="#f44336"></mu-icon>
-            <mu-icon v-if="q.private" value="lock" color="#607d8b"></mu-icon>
+            <mu-icon value="error" :color="q.urgent ? 'red' : 'grey'" @click="onToggleUrgent(q)"></mu-icon>
+            <mu-icon value="lock" :color="q.private ? 'purple' : 'grey'" @click="onTogglePrivate(q)"></mu-icon>
             <mu-icon value="grade" :color="q.featured ? 'orange' : 'grey'" @click="onToggleFeatured(q)"></mu-icon>
         </mu-col>
     </mu-row>
@@ -39,7 +39,6 @@
         <mu-button small flat>修改</mu-button>
         <mu-button small flat>回答</mu-button>
         <mu-button small flat>标签</mu-button>
-        <mu-button small flat>加精</mu-button>
     </mu-row>
 </mu-paper>
 
@@ -49,8 +48,22 @@
 
 <mu-dialog :open.sync="filterDialog.visible" title="设置问题过滤条件">
     <mu-select label="标签" v-model="filterDialog.tag" full-width>
-        <mu-option label="全部" :value="0"></mu-option>
-        <mu-option v-for="t in tags" :key="t.id" :label="t.name" :value="t.id"></mu-option>
+        <mu-option :value="0" label="全部">
+          <mu-list-item-action avatar>
+            <mu-avatar :size="20" color="#FFFF"></mu-avatar>
+          </mu-list-item-action>
+          <mu-list-item-content>
+            <mu-list-item-title>全部</mu-list-item-title>
+          </mu-list-item-content>
+	</mu-option>
+        <mu-option v-for="t in tags" :key="t.id" :value="t.id" :label="t.name">
+          <mu-list-item-action avatar>
+            <mu-avatar :size="20" :color="t.color"></mu-avatar>
+          </mu-list-item-action>
+          <mu-list-item-content>
+            <mu-list-item-title>{{t.name}}</mu-list-item-title>
+          </mu-list-item-content>
+        </mu-option>
     </mu-select>
     <mu-button slot="actions" flat color="primary" @click="onCloseFilterDialog">确定</mu-button>
 </mu-dialog>
@@ -80,6 +93,12 @@ var vm = new Vue(lotus.buildVueConfig({
     },
 
     methods: {
+	init() {
+            lotus.callApi('list-tags')
+		.then(res => this.tags = res)
+		.catch(err => console.log(err.message));
+	},
+
         refresh() {
             let args = {
                 pageSize: this.pagination.size,
@@ -108,10 +127,34 @@ var vm = new Vue(lotus.buildVueConfig({
             this.filterDialog.visible = false;
         },
 
+	onToggleUrgent(q) {
+            if(q.replier > 0{[if IsGeneralUser .user.Role]} || q.asker !== {[.user.ID]}{[end]}) {
+                return;
+            }
+
+            let urgent = !q.urgent;
+            lotus.callApi('set-question-flag', {id: q.id, flag: 'urgent', value: urgent})
+	        .then(_ => q.urgent = urgent)
+                .catch(err => this.$alert(err.message));
+	},
+
+	onTogglePrivate(q) {
+            if(q.asker !== {[.user.ID]}) {
+                return;
+            }
+            let private = !q.private;
+            lotus.callApi('set-question-flag', {id: q.id, flag: 'private', value: private})
+	        .then(_ => q.private = private)
+                .catch(err => this.$alert(err.message));
+	},
+
 	onToggleFeatured(q) {
 {[if IsManager .user.Role]}
+            if(!q.replier) {
+                return;
+            }
             let featured = !q.featured;
-            lotus.callApi('set-question-featured', {id: q.id, featured: featured})
+            lotus.callApi('set-question-flag', {id: q.id, flag: 'featured', value: featured})
 	        .then(_ => q.featured = featured)
                 .catch(err => this.$alert(err.message));
 {[end]}
@@ -119,6 +162,7 @@ var vm = new Vue(lotus.buildVueConfig({
     },
 }));
 
+vm.init();
 vm.refresh();
 </script>
 {[end]}

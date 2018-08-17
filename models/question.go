@@ -141,9 +141,14 @@ func ReplyQuestion(q *Question) error {
 	return e
 }
 
-func SetQuestionFeatured(id int64, featured bool) error {
-	const qs = "UPDATE `question` SET `featured`=? WHERE `id`=?;"
-	_, e := db.Exec(qs, featured, id)
+func SetQuestionFlag(id int64, flag string, value bool) error {
+	switch flag {
+	default:
+		return nil
+	case "featured", "urgent", "private":
+	}
+	qs := "UPDATE `question` SET `" + flag + "`=? WHERE `id`=?;"
+	_, e := db.Exec(qs, value, id)
 	return e
 }
 

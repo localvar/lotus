@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -30,7 +31,7 @@ type Question struct {
 	ReplierAvatar string    `db:"replier_avatar" json:"replierAvatar" dbx:"<-"`
 	RepliedAt     time.Time `db:"replied_at" json:"repliedAt"`
 	DeletedAt     time.Time `db:"deleted_at" json:"-"`
-	Tags          []Tag     `db:"-" json:"tags,omitempty"`
+	Tags          []int64   `db:"-" json:"tags,omitempty"`
 }
 
 type QuestionTag struct {
@@ -80,6 +81,7 @@ func DeleteTag(id int64) error {
 	if e != nil {
 		return e
 	}
+	defer tx.Rollback()
 
 	_, e = tx.Exec("DELETE FROM `question_tag` WHERE `tag_id`=?;", id)
 	if e != nil {
@@ -89,6 +91,36 @@ func DeleteTag(id int64) error {
 	_, e = tx.Exec("DELETE FROM `tag` WHERE `id`=?;", id)
 	if e != nil {
 		return e
+	}
+
+	return tx.Commit()
+}
+
+func SetQuestionTag(uid, qid int64, added, removed []int64) error {
+	tx, e := db.Beginx()
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback()
+
+	qs := "DELETE FROM `question_tag` WHERE `question_id`=? AND `tag_id`=?;"
+	for _, tid := range removed {
+		if _, e := db.Exec(qs, qid, tid); e != nil {
+			return e
+		}
+	}
+
+	qt := &QuestionTag{
+		QuestionID: qid,
+		TaggedBy: uid,
+		TaggedAt: time.Now(),
+	}
+	qs = buildInsertTyped("question_tag", qt)
+	for _, tid := range added {
+		qt.TagID = tid
+		if _, e := db.NamedExec(qs, qt); e != nil {
+			return e
+		}
 	}
 
 	return tx.Commit()
@@ -172,7 +204,7 @@ func GetQuestionByID(id int64, wantTags bool) (*Question, error) {
 
 	if wantTags {
 		// ignore error in tags query
-		db.Select(&q.Tags, "SELECT * FROM `tag` WHERE `id` IN (SELECT `tag_id` FROM `question_tag` WHERE `question_id`=?)", id)
+		db.Select(&q.Tags, "SELECT `tag_id` FROM `question_tag` WHERE `question_id`=?", id)
 	}
 	return &q, nil
 }
@@ -198,6 +230,7 @@ type FindQuestionArg struct {
 	Tag        int64  `json:"tag"`
 	Deleted    bool   `json:"deleted"`
 	Ascending  bool   `json:"ascending"`
+	WantTags   bool   `json:"wantTags"`
 	PageSize   uint32 `json:"pageSize"`
 	PageNumber uint32 `json:"pageNumber"`
 }
@@ -323,6 +356,27 @@ func FindQuestion(fqa *FindQuestionArg) (*FindQuestionResult, error) {
 	}
 
 	result.PageNumber = fqa.PageNumber
+
+	if fqa.WantTags && len(result.Questions) > 0 {
+		ids := make([]string, 0, len(result.Questions))
+		qm := map[int64]*Question{}
+		for i := 0; i < len(result.Questions); i++ {
+			q := &result.Questions[i]
+			qm[q.ID] = q
+			ids = append(ids, strconv.FormatInt(q.ID, 10))
+		}
+
+		var tags []QuestionTag
+		in := strings.Join(ids, ",")
+		tx.Select(&tags, "SELECT * FROM `question_tag` WHERE `question_id` in ("+in+");")
+
+		for i := 0; i < len(tags); i++ {
+			t := &tags[i]
+			q := qm[t.QuestionID]
+			q.Tags = append(q.Tags, t.TagID)
+		}
+	}
+
 	return &result, nil
 }
 

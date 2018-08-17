@@ -196,6 +196,8 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 		return nil, e
 	}
 
+	arg.WantTags = true
+
 	switch strings.ToLower(refer.Path) {
 	case "/question/mine.html":
 		arg.Asker = u.ID
@@ -207,6 +209,24 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 	}
 
 	return models.FindQuestion(arg)
+}
+
+type setQuestionTagArg struct {
+	ID      int64   `json:"id"`
+	Added   []int64 `json:"added"`
+	Removed []int64 `json:"removed"`
+}
+
+func onSetQuestionTag(r *http.Request, arg *setQuestionTagArg) error {
+	u, e := userFromCookie(r)
+	if e != nil {
+		return e
+	}
+	if models.IsManager(u.Role) {
+		return errPermissionDenied
+	}
+
+	return models.SetQuestionTag(u.ID, arg.ID, arg.Added, arg.Removed)
 }
 
 type setQuestionFlagArg struct {
@@ -246,7 +266,7 @@ func onSetQuestionFlag(r *http.Request, arg *setQuestionFlagArg) error {
 			return errPermissionDenied
 		}
 	} else if arg.Flag == "private" {
-		if  q.Asker != u.ID {
+		if q.Asker != u.ID {
 			return errPermissionDenied
 		}
 	} else {
@@ -267,6 +287,7 @@ func questionInit() error {
 
 	rpc.Add("get-question-by-id", onGetQuestionByID)
 	rpc.Add("set-question-flag", onSetQuestionFlag)
+	rpc.Add("set-question-tag", onSetQuestionTag)
 	rpc.Add("edit-question", onEditQuestion)
 	rpc.Add("reply-question", onReplyQuestion)
 	rpc.Add("remove-question", onRemoveQuestion)

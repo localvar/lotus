@@ -33,13 +33,20 @@
             <mu-col span="1"><mu-avatar :size="24"><a :href="'/user/index.html?id='+q.replier"><img :src="q.replierAvatar"></a></mu-avatar></mu-col>
         </mu-row>
     </template>
-    <mu-divider></mu-divider>
-    <mu-row>
-        <mu-button small flat>删除</mu-button>
-        <mu-button small flat>修改</mu-button>
-        <mu-button small flat>回答</mu-button>
-        <mu-button small flat>标签</mu-button>
-    </mu-row>
+    <template {[- if IsManager .user.Role | not]} v-if="q.tags.length"{[end]}>
+        <mu-divider></mu-divider>
+        <mu-row>
+{[if IsManager .user.Role]}
+            <mu-button small flat @click="onShowTagDialog(q)" style="min-width:initial">
+                <mu-icon value="settings" color="primary"></mu-icon>
+            </mu-button>
+{[end]}
+            <mu-button small flat v-for="t in q.tags" :key="t.id" style="min-width:initial">
+                <mu-icon left value="bookmark" :color="t.color"></mu-icon>
+                {{t.name}}
+            </mu-button>
+        </mu-row>
+    </template>
 </mu-paper>
 
 <mu-flex justify-content="center">
@@ -67,6 +74,15 @@
     </mu-select>
     <mu-button slot="actions" flat color="primary" @click="onCloseFilterDialog">确定</mu-button>
 </mu-dialog>
+
+<mu-dialog :open.sync="tagDialog.visible">
+    <mu-flex align-items="center" wrap="wrap">
+        <mu-checkbox v-for="t in tags" :key="t.id" uncheck-icon="bookmark_border" checked-icon="bookmark" :color="t.color" v-model="t.selected" :label="t.name"></mu-checkbox>
+        &nbsp;&nbsp;
+    </mu-flex>
+    <mu-button slot="actions" flat color="primary" @click="onCloseTagDialog">确定</mu-button>
+</mu-dialog>
+
 {[end]}
 
 {[define "script"]}
@@ -82,21 +98,31 @@ var vm = new Vue(lotus.buildVueConfig({
             visible: false,
         },
 
+        tagDialog: {
+            question: null,
+            visible: false,
+        },
+
         pagination: {
             total: 1,
             current: 1,
             size: 10,
         },
 
-        tags: [],
+        tags: {},
         questions: [],
     },
 
     methods: {
         init() {
             lotus.callApi('list-tags')
-                .then(res => this.tags = res)
-                .catch(err => console.log(err.message));
+                .then(res => {
+                    let tags = {}
+                    for(let t of res) {
+                        tags[String(t.id)] = t;
+                    }
+                    this.tags = tags;
+                }).catch(err => console.log(err.message));
         },
 
         refresh() {
@@ -107,6 +133,16 @@ var vm = new Vue(lotus.buildVueConfig({
 
             lotus.callApi('find-question', args)
                 .then(res => {
+                    for(let q of res.questions) {
+                        let tags = [];
+                        if(q.tags) {
+                            for(let tid of q.tags) {
+                                let t = this.tags[String(tid)];
+                                t && tags.push(t);
+                            }
+                        }
+                        q.tags = tags;
+                    }
                     this.questions = res.questions;
                     this.pagination.total = res.total;
                     this.pagination.current = res.pageNumber + 1;
@@ -125,6 +161,54 @@ var vm = new Vue(lotus.buildVueConfig({
 
         onCloseFilterDialog() {
             this.filterDialog.visible = false;
+        },
+
+        onShowTagDialog(q) {
+            this.tagDialog.question = q;
+            for(let k in this.tags) {
+                this.tags[k].selected = false;
+            }
+            for(let t of q.tags) {
+                this.tags[String(t.id)].selected = true;
+            }
+            this.tagDialog.visible = true;
+        },
+
+        onCloseTagDialog() {
+            let q = this.tagDialog.question;
+            let tags = [], removed = [], added = [];
+
+            for(let k in this.tags) {
+                let t = this.tags[k];
+                if(t.selected) {
+                    tags.push(t);
+                    let found = false;
+                    for(let t1 of q.tags) {
+                        if(t1.id == t.id) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if(!found) {
+                        added.push(t.id);
+                    }
+                } else {
+                    for(let t1 of q.tags) {
+                        if(t1.id == t.id) {
+                            removed.push(t.id)
+                        }
+                    }
+                }
+            }
+
+            this.tagDialog.visible = false;
+            if(!removed.length && !added.length) {
+                return;
+            }
+
+            lotus.callApi('set-question-tag', {id: q.id, added: added, removed: removed})
+                .then(_ => q.tags = tags)
+                .catch(err => this.$alert(err.message))
         },
 
         onToggleUrgent(q) {

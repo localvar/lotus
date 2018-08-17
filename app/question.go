@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -160,28 +161,6 @@ func onRemoveQuestion(r *http.Request, arg *IDArg) error {
 }
 
 func questionRenderList(ctx *viewContext) error {
-	return nil
-}
-
-func questionRenderMine(ctx *viewContext) error {
-	_, e := userIDFromCookie(ctx.r)
-	if e != nil {
-		return e
-	}
-
-	ctx.data["mode"] = "mine"
-	ctx.tmpl = "question/list.html"
-	return nil
-}
-
-func questionRenderReplied(ctx *viewContext) error {
-	ctx.data["mode"] = "replied"
-	ctx.tmpl = "question/list.html"
-	return nil
-}
-
-func questionRenderFeatured(ctx *viewContext) error {
-	ctx.data["mode"] = "featured"
 	ctx.tmpl = "question/list.html"
 	return nil
 }
@@ -199,13 +178,34 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 	arg.WantTags = true
 
 	switch strings.ToLower(refer.Path) {
+	case "/question/list.html":
+		query := r.URL.Query()
+		arg.Replied = "yes"
+		arg.Private = "no"
+		if v, e := strconv.ParseInt(query.Get("asker"), 10, 64); e == nil {
+			arg.Asker = v
+		}
+		if v, e := strconv.ParseInt(query.Get("replier"), 10, 64); e == nil {
+			arg.Replier = v
+		}
+		if v, e := strconv.ParseInt(query.Get("tag"), 10, 64); arg.Tag == 0 && e == nil {
+			arg.Tag = v
+		}
 	case "/question/mine.html":
 		arg.Asker = u.ID
+	case "/question/unreplied.html":
+		if !models.IsManager(u.Role) {
+			return nil, errPermissionDenied
+		}
+		arg.Replied = "no"
+                arg.Private = ""
+                arg.Urgent = "first"
+	case "/question/replied.html":
+		arg.Replied = "yes"
+		arg.Private = "no"
 	case "/question/featured.html":
 		arg.Featured = "yes"
-		if u.ID != arg.Asker {
-			arg.Private = "no"
-		}
+		arg.Private = "no"
 	}
 
 	return models.FindQuestion(arg)
@@ -222,7 +222,7 @@ func onSetQuestionTag(r *http.Request, arg *setQuestionTagArg) error {
 	if e != nil {
 		return e
 	}
-	if models.IsManager(u.Role) {
+	if !models.IsManager(u.Role) {
 		return errPermissionDenied
 	}
 
@@ -278,12 +278,12 @@ func onSetQuestionFlag(r *http.Request, arg *setQuestionFlagArg) error {
 
 func questionInit() error {
 	viewAddRoute("/question/list.html", questionRenderList, viewRequireOAuth, 0)
-	viewAddRoute("/question/mine.html", questionRenderMine, viewRequireOAuth, 0)
-	viewAddRoute("/question/replied.html", questionRenderReplied, viewRequireOAuth, 0)
-	viewAddRoute("/question/featured.html", questionRenderFeatured, viewRequireOAuth, 0)
+	viewAddRoute("/question/mine.html", questionRenderList, viewRequireOAuth, 0)
+	viewAddRoute("/question/replied.html", questionRenderList, viewRequireOAuth, 0)
+	viewAddRoute("/question/unreplied.html", questionRenderList, viewRequireOAuth, makeRoleMask(models.ContentEditor, models.SystemAdmin))
+	viewAddRoute("/question/featured.html", questionRenderList, viewRequireOAuth, 0)
 
 	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth, 0)
-	viewAddRoute("/question/reply.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.ContentEditor, models.SystemAdmin))
 
 	rpc.Add("get-question-by-id", onGetQuestionByID)
 	rpc.Add("set-question-flag", onSetQuestionFlag)

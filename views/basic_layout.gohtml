@@ -39,14 +39,6 @@
                     </mu-list-item-action>
                     <mu-list-item-title>我要提问</mu-list-item-title>
                 </mu-list-item>
-{[if IsManager .user.Role]}
-                <mu-list-item button @click="navigateTo('/question/reply.html')">
-                    <mu-list-item-action>
-                        <mu-icon value="reply" color="primary"></mu-icon>
-                    </mu-list-item-action>
-                    <mu-list-item-title>回复问题</mu-list-item-title>
-                </mu-list-item>
-{[end]}
                 <mu-divider></mu-divider>
                 <mu-list-item button @click="navigateTo('/question/mine.html')">
                     <mu-list-item-action>
@@ -54,6 +46,14 @@
                     </mu-list-item-action>
                     <mu-list-item-title>我的问题</mu-list-item-title>
                 </mu-list-item>
+{[if IsManager .user.Role]}
+                <mu-list-item button @click="navigateTo('/question/unreplied.html')">
+                    <mu-list-item-action>
+                        <mu-icon value="reply" color="primary"></mu-icon>
+                    </mu-list-item-action>
+                    <mu-list-item-title>待回复问题</mu-list-item-title>
+                </mu-list-item>
+{[end]}
                 <mu-list-item button @click="navigateTo('/question/replied.html')">
                     <mu-list-item-action>
                         <mu-icon value="check_circle" color="primary"></mu-icon>

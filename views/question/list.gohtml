@@ -76,10 +76,7 @@
 </mu-dialog>
 
 <mu-dialog :open.sync="tagDialog.visible">
-    <mu-flex align-items="center" wrap="wrap">
-        <mu-checkbox v-for="t in tags" :key="t.id" uncheck-icon="bookmark_border" checked-icon="bookmark" :color="t.color" v-model="t.selected" :label="t.name"></mu-checkbox>
-        &nbsp;&nbsp;
-    </mu-flex>
+    <mu-checkbox v-for="t in tags" :key="t.id" v-model="t.selected" uncheck-icon="bookmark_border" checked-icon="bookmark" :color="t.color" :label="t.name"></mu-checkbox>
     <mu-button slot="actions" flat color="primary" @click="onCloseTagDialog">确定</mu-button>
 </mu-dialog>
 
@@ -118,6 +115,7 @@ var vm = new Vue(lotus.buildVueConfig({
             lotus.callApi('list-tags')
                 .then(res => {
                     let tags = {}
+                    res = res || [];
                     for(let t of res) {
                         tags[String(t.id)] = t;
                     }
@@ -133,7 +131,8 @@ var vm = new Vue(lotus.buildVueConfig({
 
             lotus.callApi('find-question', args)
                 .then(res => {
-                    for(let q of res.questions) {
+                    let questions = res.questions || [];
+                    for(let q of questions) {
                         let tags = [];
                         if(q.tags) {
                             for(let tid of q.tags) {
@@ -143,7 +142,7 @@ var vm = new Vue(lotus.buildVueConfig({
                         }
                         q.tags = tags;
                     }
-                    this.questions = res.questions;
+                    this.questions = questions;
                     this.pagination.total = res.total;
                     this.pagination.current = res.pageNumber + 1;
                 }).catch(err => {

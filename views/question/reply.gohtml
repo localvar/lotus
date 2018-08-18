@@ -1,0 +1,95 @@
+{[/* layout: basic */]}
+
+{[define "title"]}回复{[end]}
+
+{[define "appBar"]}
+<mu-button flat slot="right" @click="onSubmit">提交</mu-button>
+{[end]}
+
+{[define "body"]}
+<div>
+    <span>{{question.askerName}} 问：</span><br>
+    {{question.content}}
+</div>
+<mu-form ref="form" :model="question">
+    <mu-form-item label="回复" prop="reply">
+        <mu-text-field multi-line :rows="10" v-model="question.reply"></mu-text-field>
+    </mu-form-item>
+
+    <mu-form-item label="标签" style="font-size:12px;">
+        <mu-col v-for="t in tags" :key="t.id" span="4">
+            <mu-checkbox style="line-height:12px;" :value="t.selected" v-model="t.selected" uncheck-icon="bookmark_border" checked-icon="bookmark" :color="t.color" :label="t.name"></mu-checkbox>
+        </mu-col>
+    </mu-form-item>
+</mu-form>
+{[end]}
+
+
+{[define "script"]}
+<script>
+var vm = new Vue(lotus.buildVueConfig({
+    el: 'div#app',
+
+    data: {
+        tags: [],
+        question: {
+            id: 0,
+            urgent: false,
+            private: false,
+            content: '',
+            reply: '',
+            asker: 0,
+            askerName: '',
+            askedAt: '',
+            replier: 0,
+            replierName: '',
+            repliedAt: '',
+            tags: [],
+        }
+    },
+
+    methods: {
+        init(id) {
+            Promise.all([
+                lotus.callApi('list-tags'),
+                lotus.callApi('get-question-by-id', {id: id}),
+            ]).then(values => {
+                let tags = values[0] || [], q = values[1];
+                for(let t of tags) {
+                    t.selected = false;
+                    for(let tid of (q.tags || [])) {
+                        if(tid == t.id) {
+                            t.selected = true;
+                            break;
+                        }
+                    }
+                }
+                this.tags = tags;
+                this.question = q;
+            }).catch(err => this.$alert(err.message));
+        },
+
+        onSubmit() {
+            let q = this.question;
+            if(!q.reply.trim().length) {
+                this.$toast.info('回复不能为空')
+                return;
+            }
+            let tags = [];
+            for(let t of this.tags) {
+                if(t.selected) {
+                    tags.push(t.id);
+                }
+            }
+            lotus.callApi('reply-question', {id: q.id, reply: q.reply, tags: tags})
+                .then(_ => this.$alert('回复成功，点击“确定”按钮返回问题列表。'))
+                .then(_ => location.href = '/question/unreplied.html')
+                .catch(err => this.$alert(err.message));
+
+        }
+    },
+}));
+
+vm.init(lotus.getUrlArgs().id);
+</script>
+{[end]}

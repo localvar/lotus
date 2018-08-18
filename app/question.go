@@ -100,8 +100,12 @@ func onEditQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 		return nil, errPermissionDenied
 	}
 
-	if q.Replier != 0 && !models.IsManager(u.Role) {
-		return nil, errors.New("不允许修改已经得到回复的问题")
+	if q.Replier != 0 {
+		if !models.IsManager(u.Role) {
+			return nil, errors.New("不允许修改已经得到回复的问题")
+		}
+		// cannot set 'urgent' flag on replied questions
+		q.Urgent = false
 	}
 
 	if q.Asker != u.ID {
@@ -120,41 +124,54 @@ func onEditQuestion(r *http.Request, q *models.Question) (interface{}, error) {
 	return q, nil
 }
 
-func onReplyQuestion(r *http.Request, q *models.Question) (interface{}, error) {
+func onReplyQuestion(r *http.Request, q *models.Question) error {
+	if c := strings.TrimSpace(q.Reply); utf8.RuneCount([]byte(c)) < 1 {
+		return errors.New("回复不能为空")
+	}
+
 	u, e := userFromCookie(r)
 	if e != nil {
-		return nil, e
+		return e
 	}
 	if !models.IsManager(u.Role) {
-		return nil, errPermissionDenied
+		return errPermissionDenied
 	}
 
 	q.RepliedAt = time.Now()
 	q.Replier = u.ID
+	q.Urgent = false
 	if e = models.ReplyQuestion(q); e != nil {
-		return nil, e
+		return e
 	}
 
-	return q, nil
+	/*
+		asker, e := models.GetUserByID(q.Asker)
+		if e != nil {
+			return nil
+		}
+		msg := wechat.NewTextMessage(asker.WxOpenID)
+		wxclnt.SendCustomMessage(msg)
+	*/
+	return nil
 }
 
 func onRemoveQuestion(r *http.Request, arg *IDArg) error {
-	if arg.ID <= 0 {
-		return nil
-	}
-
 	u, e := userFromCookie(r)
 	if e != nil {
 		return e
 	}
-
-	q, e := models.GetQuestionByID(arg.ID, false)
-	if e != nil {
-		return e
+	if u.Role == models.BlockedUser {
+		return errPermissionDenied
 	}
 
-	if u.ID != q.Asker && !models.IsManager(u.Role) {
-		return errPermissionDenied
+	if !models.IsManager(u.Role) {
+		q, e := models.GetQuestionByID(arg.ID, false)
+		if e != nil {
+			return e
+		}
+		if q.Replier > 0 || u.ID != q.Asker {
+			return errPermissionDenied
+		}
 	}
 
 	return models.RemoveQuestion(arg.ID)
@@ -215,10 +232,12 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 		arg.Replied = "no"
 		arg.Private = ""
 		arg.Urgent = "first"
+		arg.Ascending = true
 	case "/question/replied.html":
 		arg.Replied = "yes"
 		arg.Private = "no"
 	case "/question/featured.html":
+		arg.Replied = "yes"
 		arg.Featured = "yes"
 		arg.Private = "no"
 	}
@@ -300,6 +319,7 @@ func questionInit() error {
 	viewAddRoute("/question/featured.html", questionRenderList, viewRequireOAuth, 0)
 
 	viewAddRoute("/question/edit.html", viewRenderNoop, viewRequireOAuth, 0)
+	viewAddRoute("/question/reply.html", viewRenderNoop, viewRequireOAuth, makeRoleMask(models.ContentEditor, models.SystemAdmin))
 
 	rpc.Add("get-question-by-id", onGetQuestionByID)
 	rpc.Add("set-question-flag", onSetQuestionFlag)

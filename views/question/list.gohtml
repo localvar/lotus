@@ -30,35 +30,50 @@
 <mu-paper v-for="q in questions" :key="q.id" :z-depth="5" style="padding: 5px; margin: 5px;">
     <mu-row>
         <mu-col span="1"><mu-avatar :size="24"><a :href="'/user/index.html?id='+q.asker"><img :src="q.askerAvatar"></a></mu-avatar></mu-col>
-        <mu-col span="7" align-self="center"><a :href="'/question/list.html?asker='+q.asker">{{q.askerName}}</a></mu-col>
-        <mu-col span="4" style="text-align:right">
+        <mu-col span="6" align-self="center"><a :href="'/question/list.html?asker='+q.asker">{{q.askerName}}</a></mu-col>
+        <mu-col span="5" style="text-align:right">
             <mu-icon value="error" :color="q.urgent ? 'red' : 'grey'" @click="onToggleUrgent(q)"></mu-icon>
             <mu-icon value="lock" :color="q.private ? 'purple' : 'grey'" @click="onTogglePrivate(q)"></mu-icon>
             <mu-icon value="grade" :color="q.featured ? 'orange' : 'grey'" @click="onToggleFeatured(q)"></mu-icon>
         </mu-col>
     </mu-row>
+
     <mu-row>
         <mu-col span="10"><div class="question-bubble">{{q.content}}</div></mu-col>
         <mu-col span="2" align-self="center" style="text-align:center;font-size:9px;">{{q.askedAt.substring(0,16).replace('T', ' ')}}</mu-col>
     </mu-row>
-    <template v-if="q.replier>0">
-        <mu-row>
-            <mu-col span="2" align-self="center" style="text-align:center;font-size:9px;">{{q.repliedAt.substring(0,16).replace('T', ' ')}}</mu-col>
-            <mu-col span="10"><div class="reply-bubble">{{q.reply}}</div></mu-col></mu-row>
-        </mu-row>
-        <mu-row style="text-align:right">
-            <mu-col offset="4" span="7" align-self="center"><a :href="'/question/list.html?replier='+q.replier">{{q.replierName}}</a></mu-col>
-            <mu-col span="1"><mu-avatar :size="24"><a :href="'/user/index.html?id='+q.replier"><img :src="q.replierAvatar"></a></mu-avatar></mu-col>
-        </mu-row>
-    </template>
-    <template {[- if IsManager .user.Role | not]} v-if="q.tags.length"{[end]}>
-        <mu-divider></mu-divider>
-        <mu-row>
+
+    <mu-row v-if="q.replier">
+        <mu-col span="2" align-self="center" style="text-align:center;font-size:9px;">{{q.repliedAt.substring(0,16).replace('T', ' ')}}</mu-col>
+        <mu-col span="10"><div class="reply-bubble">{{q.reply}}</div></mu-col></mu-row>
+    </mu-row>
+
+    <mu-row>
+        <mu-col span="6">
+            <mu-button small flat style="min-width:initial" @click="onEditQuestion(q)" {[- if IsManager .user.Role | not]} v-if="q.asker=={[.user.ID]} && !q.replier" {[- end]}>
+                <mu-icon value="edit" color="primary"></mu-icon>
+            </mu-button>
 {[if IsManager .user.Role]}
-            <mu-button small flat @click="onShowTagDialog(q)" style="min-width:initial">
-                <mu-icon value="settings" color="primary"></mu-icon>
+            <mu-button small flat style="min-width:initial" @click="onReplyQuestion(q)">
+                <mu-icon value="reply" color="primary"></mu-icon>
+            </mu-button>
+            <mu-button small flat style="min-width:initial" @click="onShowTagDialog(q)">
+                <mu-icon value="bookmark_border" color="primary"></mu-icon>
             </mu-button>
 {[end]}
+            <mu-button small flat style="min-width:initial" @click="onRemoveQuestion(q)" {[- if IsManager .user.Role | not]} v-if="q.asker=={[.user.ID]} && !q.replier" {[- end]}>
+                <mu-icon value="delete" color="primary"></mu-icon>
+            </mu-button>
+        </mu-col>
+        <template v-if="q.replier">
+            <mu-col style="text-align:right" span="5" align-self="center"><a :href="'/question/list.html?replier='+q.replier">{{q.replierName}}</a></mu-col>
+            <mu-col style="text-align:right" span="1"><mu-avatar :size="24"><a :href="'/user/index.html?id='+q.replier"><img :src="q.replierAvatar"></a></mu-avatar></mu-col>
+        </template>
+    </mu-row>
+
+    <template v-if="q.tags.length">
+        <mu-divider></mu-divider>
+        <mu-row>
             <mu-button small flat v-for="t in q.tags" :key="t.id" style="min-width:initial">
                 <mu-icon left value="bookmark" :color="t.color"></mu-icon>
                 {{t.name}}
@@ -154,6 +169,31 @@ var vm = new Vue(lotus.buildVueConfig({
 
         onPageChange() {
             this.refresh()
+        },
+
+        onEditQuestion(q) {
+            location.href = '/question/edit.html?id=' + q.id;
+        },
+
+        onReplyQuestion(q) {
+            location.href = '/question/reply.html?id=' + q.id;
+        },
+
+        onRemoveQuestion(q) {
+            let qs = this.questions;
+            this.$confirm('确实要删除这个问题吗？')
+                .then(data => {
+                    if (data.result) {
+                        return lotus.callApi('remove-question', {id: q.id})
+                    }
+                    return false;
+                }).then(result => {
+                    if(result !== false) {
+                        qs.splice(qs.indexOf(q), 1);
+                    }
+                }).catch(err => {
+                    this.$alert(err.message);
+                });
         },
 
         onFilterMenuSelected(tag) {

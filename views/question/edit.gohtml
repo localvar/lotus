@@ -13,8 +13,8 @@
     </mu-form-item>
 
     <mu-form-item>
-        <mu-switch v-model="question.urgent" label="我很着急，恳请尽快回复"></mu-switch>
-        <mu-switch v-model="question.private" label="涉及隐私，请勿公开展示"></mu-switch>
+        <mu-switch :disabled="question.replier" v-model="question.urgent" label="我很着急，恳请尽快回复"></mu-switch>
+        <mu-switch :disabled="question.asker != {[.user.ID]}" v-model="question.private" label="涉及隐私，请勿公开展示"></mu-switch>
     </mu-form-item>
 </mu-form>
 {[end]}
@@ -31,6 +31,8 @@ let vm = new Vue(lotus.buildVueConfig({
         ],
         question: {
             id: 0,
+            asker: {[.user.ID]},
+            replier: 0,
             urgent: false,
             private: false,
             content: '',
@@ -40,14 +42,19 @@ let vm = new Vue(lotus.buildVueConfig({
     methods: {
         init(id) {
             lotus.callApi('get-question-by-id', {id: id})
-                .then(res => this.question = res)
-                .catch(err => lotus.alert(err.message));
+                .then(res => {
+                    if(res.replier) {
+                        res.urgent = false;
+                    }
+                    this.question = res;
+                })
+                .catch(err => this.$alert(err.message));
         },
 
         onSubmit() {
             this.$refs.form.validate()
                 .then(res => res && lotus.callApi('edit-question', this.question))
-                .then(res => res && this.$message.alert('提交成功，点击“确定”按钮返回问题列表。'))
+                .then(res => res && this.$alert('提交成功，点击“确定”按钮返回问题列表。'))
                 .then(res => res && (location.href = '/question/mine.html'))
                 .catch(err => this.$alert(err.message));
         },

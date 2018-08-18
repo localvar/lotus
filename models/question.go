@@ -112,8 +112,8 @@ func SetQuestionTag(uid, qid int64, added, removed []int64) error {
 
 	qt := &QuestionTag{
 		QuestionID: qid,
-		TaggedBy: uid,
-		TaggedAt: time.Now(),
+		TaggedBy:   uid,
+		TaggedAt:   time.Now(),
 	}
 	qs = buildInsertTyped("question_tag", qt)
 	for _, tid := range added {
@@ -124,23 +124,6 @@ func SetQuestionTag(uid, qid int64, added, removed []int64) error {
 	}
 
 	return tx.Commit()
-}
-
-func InsertQuestionTag(qt *QuestionTag) (*QuestionTag, error) {
-	qs := buildInsertTyped("question_tag", qt)
-
-	qt.TaggedAt = time.Now()
-	if _, e := db.NamedExec(qs, qt); e != nil {
-		return nil, e
-	}
-
-	return qt, nil
-}
-
-func DeleteQuestionTag(qt *QuestionTag) error {
-	const qs = "DELETE FROM `question_tag` WHERE `question_id`=:question_id AND `tag_id`=:tag_id;"
-	_, e := db.NamedExec(qs, qt)
-	return e
 }
 
 func InsertQuestion(q *Question) (*Question, error) {
@@ -168,9 +151,37 @@ func UpdateQuestion(q *Question) error {
 }
 
 func ReplyQuestion(q *Question) error {
-	const qs = "UPDATE `question` SET `replier`=:replier, `reply`=:reply, `replied_at`=:replied_at WHERE `id`=:id;"
-	_, e := db.NamedExec(qs, q)
-	return e
+	tx, e := db.Beginx()
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback()
+
+	qs := "UPDATE `question` SET `urgent`=:urgent, `replier`=:replier, `reply`=:reply, `replied_at`=:replied_at WHERE `id`=:id;"
+	_, e = tx.NamedExec(qs, q)
+	if e != nil {
+		return e
+	}
+
+	_, e = tx.Exec("DELETE FROM `question_tag` WHERE `question_id`=?;", q.ID)
+	if e != nil {
+		return e
+	}
+
+	qt := &QuestionTag{
+		QuestionID: q.ID,
+		TaggedBy:   q.Replier,
+		TaggedAt:   time.Now(),
+	}
+	qs = buildInsertTyped("question_tag", qt)
+	for _, tid := range q.Tags {
+		qt.TagID = tid
+		if _, e := tx.NamedExec(qs, qt); e != nil {
+			return e
+		}
+	}
+
+	return tx.Commit()
 }
 
 func SetQuestionFlag(id int64, flag string, value bool) error {

@@ -2,23 +2,27 @@
 
 {[define "title"]}{[.title]}{[end]}
 
+{[define "style"]}
+<style>
+.mu-radio-label {
+    font-size: 12px;
+    line-height: 12px;
+    white-space: initial;
+}
+</style>
+{[end]}
+
 {[define "appBar"]}
 <mu-menu slot="right" :open.sync="filterMenu.visible">
+    <mu-row slot="content" wrap="wrap" style="padding:16px">
+        <mu-col span="6" @click="onFilterMenuSelected(0)">
+            <mu-radio :value="0" :input-value="filterMenu.tag" label="全部"></mu-radio>
+        </mu-col>
+        <mu-col v-for="t in tags" :key="t.id" span="6" @click="onFilterMenuSelected(t.id)">
+            <mu-radio :value="t.id" :input-value="filterMenu.tag" uncheck-icon="bookmark_border" checked-icon="bookmark" :color="t.color" :label="t.name"></mu-radio>
+        </mu-col>
+    </mu-row>
     <mu-button small flat color="primary" style="height:100%;">{{filterMenu.tag ? tags[filterMenu.tag].name : '全部'}}<mu-icon right value="search"></mu-icon></mu-button>
-    <mu-list dense slot="content">
-        <mu-list-item button @click="onFilterMenuSelected(0)">
-            <mu-list-item-action>
-                <mu-icon :value="filterMenu.tag==0 ? 'radio_button_checked' : 'radio_button_unchecked'"></mu-icon>
-            </mu-list-item-action>
-            <mu-list-item-title>全部</mu-list-item-title>
-        </mu-list-item>
-        <mu-list-item button v-for="t in tags" :key="t.id" @click="onFilterMenuSelected(t.id)">
-            <mu-list-item-action>
-                <mu-icon :value="t.id==filterMenu.tag ? 'bookmark' : 'bookmark_border'" :color="t.color"></mu-icon>
-            </mu-list-item-action>
-            <mu-list-item-title>{{t.name}}</mu-list-item-title>
-        </mu-list-item>
-    </mu-list>
 </mu-menu>
 {[end]}
 

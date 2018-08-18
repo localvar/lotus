@@ -211,10 +211,16 @@ var vm = new Vue(lotus.buildVueConfig({
         },
 
         onToggleUrgent(q) {
-            if(q.replier > 0{[if IsGeneralUser .user.Role]} || q.asker !== {[.user.ID]}{[end]}) {
+            if(q.replier > 0) {
+                this.$toast.info('不能给已回复的问题设置"加急"标志');
                 return;
             }
-
+{[if IsGeneralUser .user.Role]}
+            if(q.asker !== {[.user.ID]}) {
+                this.$toast.info('权限不足');
+                return;
+            }
+{[end]}
             let urgent = !q.urgent;
             lotus.callApi('set-question-flag', {id: q.id, flag: 'urgent', value: urgent})
                 .then(_ => q.urgent = urgent)
@@ -223,6 +229,7 @@ var vm = new Vue(lotus.buildVueConfig({
 
         onTogglePrivate(q) {
             if(q.asker !== {[.user.ID]}) {
+                this.$toast.info('只有提问人才能设置“隐私”标志');
                 return;
             }
             let private = !q.private;
@@ -234,12 +241,15 @@ var vm = new Vue(lotus.buildVueConfig({
         onToggleFeatured(q) {
 {[if IsManager .user.Role]}
             if(!q.replier) {
+                this.$toast.info('不能给未回复的问题设置"精华"标志');
                 return;
             }
             let featured = !q.featured;
             lotus.callApi('set-question-flag', {id: q.id, flag: 'featured', value: featured})
                 .then(_ => q.featured = featured)
                 .catch(err => this.$alert(err.message));
+{[else]}
+            this.$toast.info('权限不足');
 {[end]}
         },
     },

@@ -8,7 +8,7 @@
         <mu-list-item-action @click="onChangeTagColor(tag)">
             <mu-icon value="palette" :color="tag.color"></mu-icon>
         </mu-list-item-action>
-        <mu-list-item-title><a href="'/question/list.html?tag='+tag.id">{{tag.name}}</a></mu-list-item-title>
+        <mu-list-item-title><a :href="'/question/list.html?tag='+tag.id">{{tag.name}}</a></mu-list-item-title>
         <mu-list-item-action @click="onDeleteTag(tag)">
             <mu-icon value="remove_circle" color="red"></mu-icon>
         </mu-list-item-action>

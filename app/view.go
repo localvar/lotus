@@ -102,6 +102,7 @@ func viewInit(debug bool) error {
 		return e
 	}
 
+	viewAddRoute("/about.html", viewRenderNoop, viewRequireOAuth, 0)
 	return nil
 }
 

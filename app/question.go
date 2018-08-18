@@ -175,20 +175,21 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 		return nil, e
 	}
 
-	arg.WantTags = true
-
 	switch strings.ToLower(refer.Path) {
 	case "/question/list.html":
 		query := r.URL.Query()
 		arg.Replied = "yes"
 		arg.Private = "no"
-		if v, e := strconv.ParseInt(query.Get("asker"), 10, 64); e == nil {
+		v, e := strconv.ParseInt(query.Get("asker"), 10, 64)
+		if e == nil {
 			arg.Asker = v
 		}
-		if v, e := strconv.ParseInt(query.Get("replier"), 10, 64); e == nil {
+		v, e = strconv.ParseInt(query.Get("replier"), 10, 64)
+		if e == nil {
 			arg.Replier = v
 		}
-		if v, e := strconv.ParseInt(query.Get("tag"), 10, 64); arg.Tag == 0 && e == nil {
+		v, e = strconv.ParseInt(query.Get("tag"), 10, 64)
+		if arg.Tag == 0 && e == nil {
 			arg.Tag = v
 		}
 	case "/question/mine.html":
@@ -198,8 +199,8 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 			return nil, errPermissionDenied
 		}
 		arg.Replied = "no"
-                arg.Private = ""
-                arg.Urgent = "first"
+		arg.Private = ""
+		arg.Urgent = "first"
 	case "/question/replied.html":
 		arg.Replied = "yes"
 		arg.Private = "no"
@@ -208,6 +209,7 @@ func onFindQuestion(r *http.Request, arg *models.FindQuestionArg) (interface{}, 
 		arg.Private = "no"
 	}
 
+	arg.WantTags = true
 	return models.FindQuestion(arg)
 }
 
@@ -257,11 +259,11 @@ func onSetQuestionFlag(r *http.Request, arg *setQuestionFlagArg) error {
 			return errPermissionDenied
 		}
 		if q.Replier == 0 {
-			return errors.New(`不能给未回复的问题添加"精华"标志`)
+			return errors.New(`不能给未回复的问题设置"精华"标志`)
 		}
 	} else if arg.Flag == "urgent" {
 		if q.Replier > 0 {
-			return errors.New(`不能给已回复的问题添加"加急"标志`)
+			return errors.New(`不能给已回复的问题设置"加急"标志`)
 		} else if !models.IsManager(u.Role) && q.Asker != u.ID {
 			return errPermissionDenied
 		}

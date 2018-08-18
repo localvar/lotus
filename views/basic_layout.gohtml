@@ -11,20 +11,12 @@
     <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic">
     <link rel="stylesheet" href="//cdn.bootcss.com/material-design-icons/3.0.1/iconfont/material-icons.css">
     <link href="/static/css/index.css" rel="stylesheet">
-    <style>
-        @media only screen and (max-width:599px) {
-            div#body-wrapper{padding-top: 56px;}
-        }
-        @media only screen and (min-width:600px) {
-            div#body-wrapper{padding-top: 64px;}
-        }
-    </style>
     {[block "style" .]}{[end]}
 </head>
 
 <body>
     <div id="app">
-        <mu-appbar color="primary" style="position:fixed;width:100%;">
+        <mu-appbar color="primary" style="position:fixed;width:100%;height:40px;">
             <mu-button icon slot="left" @click="showDrawer = true">
                 <mu-icon value="menu"></mu-icon>
             </mu-button>
@@ -90,7 +82,7 @@
                 </mu-list-item>
             </mu-list>
         </mu-drawer>
-        <div id="body-wrapper">
+        <div style="padding-top: 40px;">
         {[block "body" .]}{[end]}
         </div>
         <div id="footer">

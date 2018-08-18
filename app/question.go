@@ -161,6 +161,20 @@ func onRemoveQuestion(r *http.Request, arg *IDArg) error {
 }
 
 func questionRenderList(ctx *viewContext) error {
+	switch strings.ToLower(ctx.r.URL.Path) {
+	case "/question/list.html":
+		ctx.data["title"] = "问题列表"
+	case "/question/mine.html":
+		ctx.data["title"] = "我的问题"
+	case "/question/unreplied.html":
+		ctx.data["title"] = "待回答问题"
+	case "/question/replied.html":
+		ctx.data["title"] = "已回答问题"
+	case "/question/featured.html":
+		ctx.data["title"] = "精华问题"
+	default:
+		panic("why am i here?")
+	}
 	ctx.tmpl = "question/list.html"
 	return nil
 }

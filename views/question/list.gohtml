@@ -4,7 +4,7 @@
 
 {[define "appBar"]}
 <mu-menu slot="right" :open.sync="filterMenu.visible">
-    <mu-button icon style="height:100%;"><mu-icon value="search"></mu-icon></mu-button>
+    <mu-button small flat color="primary" style="height:100%;">{{filterMenu.tag ? tags[filterMenu.tag].name : '全部'}}<mu-icon right value="search"></mu-icon></mu-button>
     <mu-list dense slot="content">
         <mu-list-item button @click="onFilterMenuSelected(0)">
             <mu-list-item-action>
@@ -68,7 +68,11 @@
 </mu-flex>
 
 <mu-dialog :open.sync="tagDialog.visible">
-    <mu-checkbox v-for="t in tags" :key="t.id" :value="t.selected" v-model="t.selected" uncheck-icon="bookmark_border" checked-icon="bookmark" :color="t.color" :label="t.name"></mu-checkbox>
+    <mu-row id="tag-dialog-wrapper" style="font-size:12px;">
+        <mu-col v-for="t in tags" :key="t.id" span="6">
+            <mu-checkbox style="line-height:12px;" :value="t.selected" v-model="t.selected" uncheck-icon="bookmark_border" checked-icon="bookmark" :color="t.color" :label="t.name"></mu-checkbox>
+        </mu-col>
+    </mu-row>
     <mu-button slot="actions" flat color="primary" @click="onCloseTagDialog">确定</mu-button>
 </mu-dialog>
 
@@ -86,6 +90,7 @@ var vm = new Vue(lotus.buildVueConfig({
         },
 
         tagDialog: {
+            tags: [],
             question: null,
             visible: false,
         },
@@ -107,9 +112,11 @@ var vm = new Vue(lotus.buildVueConfig({
                     let tags = {}
                     res = res || [];
                     for(let t of res) {
+                        t.selected = false;
                         tags[String(t.id)] = t;
                     }
                     this.tags = tags;
+                    this.tagDialog.tags = res;
                 }).catch(err => console.log(err.message));
         },
 
@@ -162,6 +169,9 @@ var vm = new Vue(lotus.buildVueConfig({
                 this.tags[String(t.id)].selected = true;
             }
             this.tagDialog.visible = true;
+            Vue.nextTick(() => {
+                document.getElementById("tag-dialog-wrapper").parentNode.style.padding = "12px";
+            });
         },
 
         onCloseTagDialog() {
